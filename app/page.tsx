@@ -1,3 +1,6 @@
+"use client"
+
+import { useState } from "react"
 const products = [
   {
     id: 1,
@@ -50,6 +53,16 @@ const products = [
 ]
 
 export default function Home() {
+ const [filter, setFilter] = useState("all")
+ const filteredProducts = products.filter((product) => {
+  const price = Number(product.newPrice.replace("R$ ", "").replace(",", "."))
+
+  if (filter === "under20") return price <= 20
+  if (filter === "under50") return price <= 50
+  if (filter === "best") return product.discount.includes("8") || product.discount.includes("7")
+
+  return true
+}) 
   return (
     <main
       style={{
@@ -105,7 +118,7 @@ export default function Home() {
             marginBottom: "28px",
           }}
         >
-          <button
+          <button onClick={()
             style={{
               background: "#22c55e",
               color: "black",
@@ -117,9 +130,9 @@ export default function Home() {
             }}
           >
             Todos
-          </button>
+          <setFilter("all")}>Todos</button>
 
-          <button
+          <button onClick={()
             style={{
               background: "#18181b",
               color: "white",
@@ -130,9 +143,9 @@ export default function Home() {
             }}
           >
             Até R$ 20
-          </button>
+          <setFilter("under20")}>Até R$ 20</button>
 
-          <button
+          <button onClick={()
             style={{
               background: "#18181b",
               color: "white",
@@ -143,9 +156,9 @@ export default function Home() {
             }}
           >
             Até R$ 50
-          </button>
+          <setFilter("under50")}>Até R$ 50</button>
 
-          <button
+          <button onClick={()
             style={{
               background: "#18181b",
               color: "white",
@@ -156,7 +169,7 @@ export default function Home() {
             }}
           >
             Melhores descontos
-          </button>
+          <setFilter("best")}>Melhores descontos</button>
         </section>
 
         <section
@@ -166,7 +179,7 @@ export default function Home() {
             gap: "20px",
           }}
         >
-          {products.map((product) => (
+          {filteredProducts.map((product) => (
             <article
               key={product.id}
               style={{
