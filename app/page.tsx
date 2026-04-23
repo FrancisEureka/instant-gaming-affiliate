@@ -1,6 +1,7 @@
 "use client"
 
 import { useState } from "react"
+
 const products = [
   {
     id: 1,
@@ -53,16 +54,28 @@ const products = [
 ]
 
 export default function Home() {
- const [filter, setFilter] = useState("all")
- const filteredProducts = products.filter((product) => {
-  const price = Number(product.newPrice.replace("R$ ", "").replace(",", "."))
+  const [filter, setFilter] = useState("all")
 
-  if (filter === "under20") return price <= 20
-  if (filter === "under50") return price <= 50
-  if (filter === "best") return product.discount.includes("8") || product.discount.includes("7")
+  const filteredProducts = products.filter((product) => {
+    const price = Number(product.newPrice.replace("R$ ", "").replace(",", "."))
 
-  return true
-}) 
+    if (filter === "under20") return price <= 20
+    if (filter === "under50") return price <= 50
+    if (filter === "best") return Number(product.discount.replace("%", "").replace("-", "")) >= 60
+
+    return true
+  })
+
+  const filterButtonStyle = (active: boolean) => ({
+    background: active ? "#22c55e" : "#18181b",
+    color: active ? "black" : "white",
+    border: active ? "none" : "1px solid #27272a",
+    padding: "12px 18px",
+    borderRadius: "999px",
+    fontWeight: "bold" as const,
+    cursor: "pointer",
+  })
+
   return (
     <main
       style={{
@@ -118,58 +131,27 @@ export default function Home() {
             marginBottom: "28px",
           }}
         >
-          <button onClick={()
-            style={{
-              background: "#22c55e",
-              color: "black",
-              border: "none",
-              padding: "12px 18px",
-              borderRadius: "999px",
-              fontWeight: "bold",
-              cursor: "pointer",
-            }}
-          >
+          <button style={filterButtonStyle(filter === "all")} onClick={() => setFilter("all")}>
             Todos
-          <setFilter("all")}>Todos</button>
+          </button>
 
-          <button onClick={()
-            style={{
-              background: "#18181b",
-              color: "white",
-              border: "1px solid #27272a",
-              padding: "12px 18px",
-              borderRadius: "999px",
-              cursor: "pointer",
-            }}
+          <button
+            style={filterButtonStyle(filter === "under20")}
+            onClick={() => setFilter("under20")}
           >
             Até R$ 20
-          <setFilter("under20")}>Até R$ 20</button>
+          </button>
 
-          <button onClick={()
-            style={{
-              background: "#18181b",
-              color: "white",
-              border: "1px solid #27272a",
-              padding: "12px 18px",
-              borderRadius: "999px",
-              cursor: "pointer",
-            }}
+          <button
+            style={filterButtonStyle(filter === "under50")}
+            onClick={() => setFilter("under50")}
           >
             Até R$ 50
-          <setFilter("under50")}>Até R$ 50</button>
+          </button>
 
-          <button onClick={()
-            style={{
-              background: "#18181b",
-              color: "white",
-              border: "1px solid #27272a",
-              padding: "12px 18px",
-              borderRadius: "999px",
-              cursor: "pointer",
-            }}
-          >
+          <button style={filterButtonStyle(filter === "best")} onClick={() => setFilter("best")}>
             Melhores descontos
-          <setFilter("best")}>Melhores descontos</button>
+          </button>
         </section>
 
         <section
