@@ -1,65 +1,101 @@
-import Image from "next/image";
-
 export default function Home() {
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
+    <main style={{ minHeight: "100vh", background: "#0a0a0a", color: "white", padding: "40px" }}>
+      <div style={{ maxWidth: "1100px", margin: "0 auto" }}>
+        <h1 style={{ fontSize: "40px", fontWeight: "bold", marginBottom: "10px" }}>
+          Promoções Instant Gaming
+        </h1>
+
+        <p style={{ color: "#a1a1aa", marginBottom: "30px" }}>
+          Ofertas com meu link de afiliado.
+        </p>
+
+        <div
+          style={{
+            background: "#18181b",
+            border: "1px solid #27272a",
+            borderRadius: "18px",
+            padding: "20px",
+            maxWidth: "380px",
+          }}
+        >
+          <img
+            src="https://images.unsplash.com/photo-1542751371-adc38448a05e"
+            alt="Game"
+            style={{
+              width: "100%",
+              height: "220px",
+              objectFit: "cover",
+              borderRadius: "12px",
+              marginBottom: "16px",
+            }}
+          />
+
+          <div style={{ display: "flex", gap: "8px", marginBottom: "12px" }}>
+            <span
+              style={{
+                background: "#dc2626",
+                color: "white",
+                fontSize: "12px",
+                fontWeight: "bold",
+                padding: "6px 10px",
+                borderRadius: "999px",
+              }}
             >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
+              -81%
+            </span>
+
+            <span
+              style={{
+                background: "#16a34a",
+                color: "white",
+                fontSize: "12px",
+                fontWeight: "bold",
+                padding: "6px 10px",
+                borderRadius: "999px",
+              }}
             >
-              Learning
-            </a>{" "}
-            center.
-          </p>
-        </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
+              Em estoque
+            </span>
+          </div>
+
+          <h2 style={{ fontSize: "22px", fontWeight: "bold", marginBottom: "8px" }}>
+            Scythe: Digital Edition
+          </h2>
+
+          <p style={{ color: "#a1a1aa", marginBottom: "14px" }}>Instant Gaming</p>
+
+          <div style={{ marginBottom: "18px" }}>
+            <span
+              style={{
+                color: "#71717a",
+                textDecoration: "line-through",
+                marginRight: "10px",
+              }}
+            >
+              R$ 129,99
+            </span>
+            <span style={{ fontSize: "28px", fontWeight: "bold" }}>R$ 25,06</span>
+          </div>
+
           <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
+            href="https://www.instant-gaming.com/en/8207-buy-scythe-digital-edition-digital-edition-pc-mac-game-steam/?igr=franciseureka"
             target="_blank"
             rel="noopener noreferrer"
+            style={{
+              display: "inline-block",
+              background: "#22c55e",
+              color: "black",
+              fontWeight: "bold",
+              padding: "12px 18px",
+              borderRadius: "12px",
+              textDecoration: "none",
+            }}
           >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
+            Ver oferta
           </a>
         </div>
-      </main>
-    </div>
-  );
+      </div>
+    </main>
+  )
 }
