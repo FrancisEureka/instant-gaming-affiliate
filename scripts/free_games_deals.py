@@ -128,6 +128,59 @@ def post_free_game(game):
         return res.status in (200, 204)
 
 
+def send_whatsapp_free_game(game):
+    """Envia o jogo grátis para o grupo do WhatsApp caso as variáveis de ambiente estejam configuradas."""
+    api_url = os.environ.get("WHATSAPP_API_URL")
+    api_key = os.environ.get("WHATSAPP_API_KEY")
+    instance = os.environ.get("WHATSAPP_INSTANCE", "eureka")
+    group_id = os.environ.get("WHATSAPP_FREE_GAMES_GROUP", "CqqaKZDS0OXD8EDAG4XLOe")  # Grupo Jogos Grátis
+
+    if not api_url or not api_key:
+        return False
+
+    title = game.get("title", "Jogo Grátis")
+    platforms = game.get("platforms", "PC")
+    worth = game.get("worth", "N/A")
+    giveaway_url = game.get("open_giveaway_url", "")
+    worth_text = f"~{worth}~ ➡️ *GRÁTIS (100% OFF)*" if worth != "N/A" else "*100% GRÁTIS*"
+
+    caption = (
+        f"🎁 *JOGO 100% GRÁTIS DISPONÍVEL!*\n\n"
+        f"🎮 *{title}*\n"
+        f"🏷️ Preço Original: {worth_text}\n"
+        f"🔑 Plataforma: {platforms}\n\n"
+        f"📥 *Resgate agora para a sua conta antes do fim da promoção:*\n"
+        f"{giveaway_url}\n\n"
+        f"⚡ _Comunidade Eureka • Jogos Grátis para PC_"
+    )
+
+    endpoint = f"{api_url.rstrip('/')}/message/sendMedia/{instance}"
+    payload = {
+        "number": group_id,
+        "mediatype": "image",
+        "mimetype": "image/jpeg",
+        "caption": caption,
+        "media": game.get("image", ""),
+        "fileName": f"{title}.jpg",
+    }
+
+    try:
+        req = urllib.request.Request(
+            endpoint,
+            data=json.dumps(payload).encode("utf-8"),
+            headers={
+                "Content-Type": "application/json",
+                "apikey": api_key,
+                "User-Agent": "Mozilla/5.0",
+            },
+        )
+        with urllib.request.urlopen(req, timeout=15) as res:
+            return res.status in (200, 201)
+    except Exception as e:
+        print(f"Aviso ao enviar jogo grátis para o WhatsApp: {e}")
+        return False
+
+
 def run(max_games=2):
     history = load_history()
     games = get_free_games()
@@ -139,7 +192,10 @@ def run(max_games=2):
             continue
 
         print(f"Postando jogo grátis: {game.get('title')}")
-        if post_free_game(game):
+        discord_ok = post_free_game(game)
+        whatsapp_ok = send_whatsapp_free_game(game)
+
+        if discord_ok or whatsapp_ok:
             history[gid] = datetime.now(timezone.utc).isoformat()
             posted_count += 1
             if posted_count >= max_games:
@@ -151,3 +207,4 @@ def run(max_games=2):
 
 if __name__ == "__main__":
     run()
+

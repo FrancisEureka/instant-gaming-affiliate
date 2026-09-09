@@ -139,6 +139,60 @@ def post_deal(deal):
         return res.status in (200, 204)
 
 
+def send_whatsapp_deal(deal):
+    """Envia a oferta para o grupo do WhatsApp caso as variáveis de ambiente estejam configuradas."""
+    api_url = os.environ.get("WHATSAPP_API_URL")
+    api_key = os.environ.get("WHATSAPP_API_KEY")
+    instance = os.environ.get("WHATSAPP_INSTANCE", "eureka")
+    group_id = os.environ.get("WHATSAPP_DEALS_GROUP", "EzSicS5T2AmLV5T8okpLbF")  # Grupo Ofertinhas
+
+    if not api_url or not api_key:
+        return False
+
+    name = deal["name"]
+    discount = deal["discount"]
+    price = f"R$ {deal['final_price']:.2f}".replace(".", ",")
+    orig_price = f"R$ {deal['orig_price']:.2f}".replace(".", ",")
+    affiliate_link = build_affiliate_url(name)
+
+    caption = (
+        f"🔥 *OFERTA DO DIA NA INSTANT GAMING!*\n\n"
+        f"🎮 *{name}* com *-{discount}% de Desconto!*\n"
+        f"💰 De: ~{orig_price}~ por APENAS *{price}*\n"
+        f"🔑 Plataforma: Steam / PC Digital\n\n"
+        f"🛒 *Garanta o seu jogo com desconto pelo link de parceiro:*\n"
+        f"{affiliate_link}\n\n"
+        f"⚡ _Ativação imediata • Comunidade Eureka_"
+    )
+
+    # Endpoint padrão da Evolution API / gateways compatíveis
+    endpoint = f"{api_url.rstrip('/')}/message/sendMedia/{instance}"
+    payload = {
+        "number": group_id,
+        "mediatype": "image",
+        "mimetype": "image/jpeg",
+        "caption": caption,
+        "media": deal["image"],
+        "fileName": f"{name}.jpg",
+    }
+
+    try:
+        req = urllib.request.Request(
+            endpoint,
+            data=json.dumps(payload).encode("utf-8"),
+            headers={
+                "Content-Type": "application/json",
+                "apikey": api_key,
+                "User-Agent": "Mozilla/5.0",
+            },
+        )
+        with urllib.request.urlopen(req, timeout=15) as res:
+            return res.status in (200, 201)
+    except Exception as e:
+        print(f"Aviso ao enviar oferta para o WhatsApp: {e}")
+        return False
+
+
 def run(max_deals=2):
     history = load_history()
     deals = get_daily_deals()
@@ -149,8 +203,11 @@ def run(max_deals=2):
             continue
 
         print(f"Postando oferta: {deal['name']} (-{deal['discount']}%)")
-        if post_deal(deal):
-            history[deal["id"]] = datetime.now().isoformat()
+        discord_ok = post_deal(deal)
+        whatsapp_ok = send_whatsapp_deal(deal)
+
+        if discord_ok or whatsapp_ok:
+            history[deal["id"]] = datetime.now(timezone.utc).isoformat()
             posted_count += 1
             if posted_count >= max_deals:
                 break
@@ -161,3 +218,4 @@ def run(max_deals=2):
 
 if __name__ == "__main__":
     run()
+
