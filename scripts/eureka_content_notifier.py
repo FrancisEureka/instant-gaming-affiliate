@@ -156,14 +156,10 @@ def post_twitch_live(live):
     except Exception as e:
         print(f"Erro ao enviar live no Discord: {e}")
 
-    # 2. Enviar para WhatsApp (Padoka dos Gamers)
+    # 2. Enviar para WhatsApp (Padoka dos Gamers) - Direto e sem excesso de texto
     whatsapp_caption = (
-        f"🔴 *FRANCIS EUREKA ESTÁ AO VIVO NA TWITCH!*\n\n"
-        f"🎮 *{title}*\n"
-        f"🕹️ Jogando: *{game}*\n\n"
-        f"A live acabou de começar! Vem trocar uma ideia no chat:\n"
-        f"{url}\n\n"
-        f"⚡ _Padoka dos Gamers • Comunidade Eureka_"
+        f"🔴 Francis Eureka está ao vivo - \"{title}\"\n\n"
+        f"👉 {url}"
     )
     send_whatsapp_message(WHATSAPP_LIVES_GROUP, whatsapp_caption, media_url=preview)
 
@@ -271,14 +267,17 @@ def post_youtube_video(video):
     except Exception as e:
         print(f"Erro ao publicar vídeo no Discord: {e}")
 
-    # 2. Postar no WhatsApp (Padoka dos Gamers)
+    # 2. Postar no WhatsApp (Padoka dos Gamers) - Breve descritivo
+    brief_desc = ""
+    if desc:
+        first_line = desc.strip().split("\n")[0].strip()
+        brief_desc = first_line if len(first_line) <= 160 else first_line[:157] + "..."
+
+    desc_line = f"\n{brief_desc}\n" if brief_desc else ""
     whatsapp_caption = (
-        f"🎬 *NOVO VÍDEO NO CANAL DO FRANCIS EUREKA!*\n\n"
-        f"▶️ *{title}*\n\n"
-        f"📖 _{desc}_\n\n"
-        f"🍿 *Assista agora no YouTube:*\n"
-        f"{url}\n\n"
-        f"⚡ _Padoka dos Gamers • Comunidade Eureka_"
+        f"🎬 Novo vídeo: *{title}*\n"
+        f"{desc_line}\n"
+        f"👉 {url}"
     )
     send_whatsapp_message(WHATSAPP_LIVES_GROUP, whatsapp_caption, media_url=thumb)
 
@@ -345,6 +344,49 @@ def send_whatsapp_message(group_id, text, media_url=None):
     except Exception as e:
         print(f"Aviso ao enviar mensagem para WhatsApp: {e}")
         return False
+
+
+# ==========================================
+# 😂 3. MEMES (Instagram / Discord / WhatsApp)
+# ==========================================
+
+def post_meme_notification(image_url, caption="", source_url=""):
+    """Envia meme para Discord (#😂・memes) e WhatsApp (Padoka dos Gamers) com breve descritivo."""
+    # 1. Discord
+    discord_payload = {
+        "content": f"😂 **Novo meme:** {caption}" if caption else "😂",
+        "username": "Eureka Memes",
+        "avatar_url": "https://cdn-icons-png.flaticon.com/512/1784/1784578.png",
+        "embeds": [
+            {
+                "description": caption,
+                "color": 16766720,
+                "image": {"url": image_url},
+                "footer": {"text": "Memes do Eureka"},
+                "timestamp": datetime.now(timezone.utc).isoformat(),
+            }
+        ],
+    }
+    if source_url:
+        discord_payload["embeds"][0]["url"] = source_url
+
+    try:
+        req = urllib.request.Request(
+            DISCORD_MEMES_WEBHOOK,
+            data=json.dumps(discord_payload).encode("utf-8"),
+            headers={"Content-Type": "application/json", "User-Agent": "Mozilla/5.0"},
+        )
+        with urllib.request.urlopen(req, timeout=10):
+            print("Meme publicado no Discord.")
+    except Exception as e:
+        print(f"Erro ao publicar meme no Discord: {e}")
+
+    # 2. WhatsApp (Padoka dos Gamers) - Breve descritivo
+    wa_caption = f"😂 {caption}" if caption else "😂"
+    if source_url:
+        wa_caption += f"\n👉 {source_url}"
+
+    send_whatsapp_message(WHATSAPP_LIVES_GROUP, wa_caption, media_url=image_url)
 
 
 def run():
