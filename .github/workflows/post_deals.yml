@@ -2,8 +2,9 @@ name: Post Instant Gaming Deals
 
 on:
   schedule:
-    # Executa todos os dias às 15:00 UTC (12:00 Horário de Brasília)
-    - cron: '0 15 * * *'
+    # Executa 3 vezes ao dia: às 08:00, 12:00 e 18:00 (Horário de Brasília)
+    # 11:00 UTC = 08:00 BRT | 15:00 UTC = 12:00 BRT | 21:00 UTC = 18:00 BRT
+    - cron: '0 11,15,21 * * *'
   workflow_dispatch: # Permite disparar manualmente pelo botão no GitHub
 
 jobs:
