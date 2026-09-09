@@ -1,0 +1,39 @@
+name: Eureka Lives & Videos Notifier
+
+on:
+  schedule:
+    # Executa a cada 15 minutos para checar abertura de live na Twitch e novos vídeos no YouTube
+    - cron: '*/15 * * * *'
+  workflow_dispatch: # Permite disparar manualmente pelo botão no GitHub
+
+jobs:
+  check-content:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write # Permite salvar o histórico (posted_youtube_history.json, posted_twitch_history.json)
+
+    steps:
+      - name: Checkout repositório
+        uses: actions/checkout@v4
+
+      - name: Configurar Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Executar Notificador de Conteúdo
+        env:
+          WHATSAPP_API_URL: ${{ secrets.WHATSAPP_API_URL }}
+          WHATSAPP_API_KEY: ${{ secrets.WHATSAPP_API_KEY }}
+          WHATSAPP_INSTANCE: ${{ secrets.WHATSAPP_INSTANCE }}
+          WHATSAPP_LIVES_GROUP: ${{ secrets.WHATSAPP_LIVES_GROUP }}
+        run: |
+          python scripts/eureka_content_notifier.py
+
+      - name: Salvar histórico de postagens
+        run: |
+          git config --global user.name "Eureka Bot"
+          git config --global user.email "bot@franciseureka.com"
+          git add scripts/posted_youtube_history.json scripts/posted_twitch_history.json
+          git commit -m "chore: atualizar histórico de lives e vídeos [skip ci]" || exit 0
+          git push

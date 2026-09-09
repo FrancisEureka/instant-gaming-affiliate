@@ -76,12 +76,79 @@ def build_affiliate_url(game_name):
     return f"https://www.instant-gaming.com/pt/procurar/?q={query}&igr={AFFILIATE_TAG}"
 
 
+def get_game_details(app_id):
+    """Busca sinopse em português e gêneros na API oficial da Steam."""
+    try:
+        url = f"https://store.steampowered.com/api/appdetails?appids={app_id}&l=brazilian"
+        req = urllib.request.Request(
+            url,
+            headers={
+                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
+            },
+        )
+        with urllib.request.urlopen(req, timeout=6) as res:
+            data = json.loads(res.read().decode("utf-8"))
+            app_data = data.get(str(app_id), {}).get("data", {})
+            desc = app_data.get("short_description", "").strip()
+            # Limita descrição se for muito longa
+            if len(desc) > 300:
+                desc = desc[:297] + "..."
+            genres = [g.get("description", "") for g in app_data.get("genres", []) if g.get("description")]
+            return {
+                "description": desc,
+                "genres": ", ".join(genres[:3]) if genres else "",
+            }
+    except Exception as e:
+        print(f"Aviso ao buscar detalhes de {app_id}: {e}")
+    return {"description": "", "genres": ""}
+
+
 def post_deal(deal):
     name = deal["name"]
     discount = deal["discount"]
     price = f"R$ {deal['final_price']:.2f}".replace(".", ",")
     orig_price = f"R$ {deal['orig_price']:.2f}".replace(".", ",")
     affiliate_link = build_affiliate_url(name)
+    desc_text = deal.get("description", "")
+    genres = deal.get("genres", "")
+
+    fields = [
+        {
+            "name": "🏷️ Desconto",
+            "value": f"`-{discount}%`",
+            "inline": True,
+        },
+        {
+            "name": "💰 De / Por",
+            "value": f"~~{orig_price}~~ ➡️ **{price}**",
+            "inline": True,
+        },
+        {
+            "name": "🔑 Plataforma",
+            "value": "Steam / PC Digital",
+            "inline": True,
+        },
+    ]
+
+    if genres:
+        fields.append({
+            "name": "🎮 Gêneros",
+            "value": genres,
+            "inline": True,
+        })
+
+    if desc_text:
+        fields.append({
+            "name": "📖 Sobre o Jogo",
+            "value": desc_text,
+            "inline": False,
+        })
+
+    fields.append({
+        "name": "🛒 Comprar Agora",
+        "value": f"[👉 **Clique aqui para garantir com desconto**]({affiliate_link})",
+        "inline": False,
+    })
 
     payload = {
         "username": "Eureka Gaming Ofertas",
@@ -96,28 +163,7 @@ def post_deal(deal):
                     f"Ao comprar pelo link, você apoia diretamente a comunidade do Eureka sem pagar nada a mais por isso!"
                 ),
                 "color": 16744192,  # Laranja Instant Gaming #FF7F00
-                "fields": [
-                    {
-                        "name": "🏷️ Desconto",
-                        "value": f"`-{discount}%`",
-                        "inline": True,
-                    },
-                    {
-                        "name": "💰 De / Por",
-                        "value": f"~~{orig_price}~~ ➡️ **{price}**",
-                        "inline": True,
-                    },
-                    {
-                        "name": "🔑 Plataforma",
-                        "value": "Steam / PC Digital",
-                        "inline": True,
-                    },
-                    {
-                        "name": "🛒 Comprar Agora",
-                        "value": f"[👉 **Clique aqui para garantir com desconto**]({affiliate_link})",
-                        "inline": False,
-                    },
-                ],
+                "fields": fields,
                 "image": {"url": deal["image"]},
                 "footer": {
                     "text": "Eureka Gaming • Cupom & Link de Afiliado: ?igr=franciseureka"
@@ -141,10 +187,10 @@ def post_deal(deal):
 
 def send_whatsapp_deal(deal):
     """Envia a oferta para o grupo do WhatsApp caso as variáveis de ambiente estejam configuradas."""
-    api_url = os.environ.get("WHATSAPP_API_URL")
-    api_key = os.environ.get("WHATSAPP_API_KEY")
-    instance = os.environ.get("WHATSAPP_INSTANCE", "eureka")
-    group_id = os.environ.get("WHATSAPP_DEALS_GROUP", "EzSicS5T2AmLV5T8okpLbF")  # Grupo Ofertinhas
+    api_url = os.environ.get("WHATSAPP_API_URL", "https://eureka-evolution.onrender.com")
+    api_key = os.environ.get("WHATSAPP_API_KEY", "A829A3AB4468-4731-9173-1A15C8361FCB")
+    instance = os.environ.get("WHATSAPP_INSTANCE", "Eureka")
+    group_id = os.environ.get("WHATSAPP_DEALS_GROUP", "120363431894288091@g.us")  # Grupo Ofertinhas (Eureka)
 
     if not api_url or not api_key:
         return False
@@ -154,12 +200,16 @@ def send_whatsapp_deal(deal):
     price = f"R$ {deal['final_price']:.2f}".replace(".", ",")
     orig_price = f"R$ {deal['orig_price']:.2f}".replace(".", ",")
     affiliate_link = build_affiliate_url(name)
+    desc_section = f"\n📖 *Sobre o jogo:*\n_{deal['description']}_\n" if deal.get("description") else ""
+    genres_line = f"🏷️ Gêneros: {deal['genres']}\n" if deal.get("genres") else ""
 
     caption = (
         f"🔥 *OFERTA DO DIA NA INSTANT GAMING!*\n\n"
         f"🎮 *{name}* com *-{discount}% de Desconto!*\n"
         f"💰 De: ~{orig_price}~ por APENAS *{price}*\n"
-        f"🔑 Plataforma: Steam / PC Digital\n\n"
+        f"🔑 Plataforma: Steam / PC Digital\n"
+        f"{genres_line}"
+        f"{desc_section}\n"
         f"🛒 *Garanta o seu jogo com desconto pelo link de parceiro:*\n"
         f"{affiliate_link}\n\n"
         f"⚡ _Ativação imediata • Comunidade Eureka_"
@@ -201,6 +251,10 @@ def run(max_deals=2):
     for deal in deals:
         if deal["id"] in history:
             continue
+
+        details = get_game_details(deal["id"])
+        deal["description"] = details["description"]
+        deal["genres"] = details["genres"]
 
         print(f"Postando oferta: {deal['name']} (-{deal['discount']}%)")
         discord_ok = post_deal(deal)

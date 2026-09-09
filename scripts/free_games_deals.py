@@ -72,8 +72,9 @@ def post_free_game(game):
     end_date = game.get("end_date", "")
 
     # Limita tamanho da descrição para manter o embed enxuto
-    if len(description) > 220:
-        description = description[:217] + "..."
+    # Limita tamanho da descrição para manter a mensagem bem estruturada
+    if len(description) > 280:
+        description = description[:277] + "..."
 
     worth_text = f"~~{worth}~~ ➡️ **GRÁTIS (100% OFF)**" if worth != "N/A" else "**100% GRÁTIS**"
 
@@ -82,8 +83,8 @@ def post_free_game(game):
         "url": giveaway_url,
         "description": (
             f"⚡ **Novo jogo gratuito disponível para resgate permanente!**\n"
-            f"{description}\n\n"
-            f"Adicione à sua biblioteca antes do fim da promoção para ficar com ele para sempre."
+            f"Adicione à sua biblioteca antes do fim da promoção para ficar com ele para sempre.\n\n"
+            f"📖 **Sobre o jogo:**\n{description}"
         ),
         "color": 3066993,  # Verde Esmeralda #2ECC71
         "fields": [
@@ -130,10 +131,10 @@ def post_free_game(game):
 
 def send_whatsapp_free_game(game):
     """Envia o jogo grátis para o grupo do WhatsApp caso as variáveis de ambiente estejam configuradas."""
-    api_url = os.environ.get("WHATSAPP_API_URL")
-    api_key = os.environ.get("WHATSAPP_API_KEY")
-    instance = os.environ.get("WHATSAPP_INSTANCE", "eureka")
-    group_id = os.environ.get("WHATSAPP_FREE_GAMES_GROUP", "CqqaKZDS0OXD8EDAG4XLOe")  # Grupo Jogos Grátis
+    api_url = os.environ.get("WHATSAPP_API_URL", "https://eureka-evolution.onrender.com")
+    api_key = os.environ.get("WHATSAPP_API_KEY", "A829A3AB4468-4731-9173-1A15C8361FCB")
+    instance = os.environ.get("WHATSAPP_INSTANCE", "Eureka")
+    group_id = os.environ.get("WHATSAPP_FREE_GAMES_GROUP", "120363409592479695@g.us")  # Grupo Jogos Grátis (Eureka)
 
     if not api_url or not api_key:
         return False
@@ -142,13 +143,19 @@ def send_whatsapp_free_game(game):
     platforms = game.get("platforms", "PC")
     worth = game.get("worth", "N/A")
     giveaway_url = game.get("open_giveaway_url", "")
+    description = game.get("description", "").strip()
+    if len(description) > 280:
+        description = description[:277] + "..."
     worth_text = f"~{worth}~ ➡️ *GRÁTIS (100% OFF)*" if worth != "N/A" else "*100% GRÁTIS*"
+
+    desc_section = f"\n📖 *Sobre o jogo:*\n_{description}_\n" if description else ""
 
     caption = (
         f"🎁 *JOGO 100% GRÁTIS DISPONÍVEL!*\n\n"
         f"🎮 *{title}*\n"
         f"🏷️ Preço Original: {worth_text}\n"
-        f"🔑 Plataforma: {platforms}\n\n"
+        f"🔑 Plataforma: {platforms}\n"
+        f"{desc_section}\n"
         f"📥 *Resgate agora para a sua conta antes do fim da promoção:*\n"
         f"{giveaway_url}\n\n"
         f"⚡ _Comunidade Eureka • Jogos Grátis para PC_"
