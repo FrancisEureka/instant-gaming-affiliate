@@ -10,7 +10,7 @@ jobs:
   check-content:
     runs-on: ubuntu-latest
     permissions:
-      contents: write # Permite salvar o histórico (posted_youtube_history.json, posted_twitch_history.json)
+      contents: write # Permite salvar o histórico (posted_youtube_history.json, posted_live_history.json)
 
     steps:
       - name: Checkout repositório
@@ -34,6 +34,6 @@ jobs:
         run: |
           git config --global user.name "Eureka Bot"
           git config --global user.email "bot@franciseureka.com"
-          git add scripts/posted_youtube_history.json scripts/posted_twitch_history.json
+          git add scripts/posted_youtube_history.json scripts/posted_live_history.json
           git commit -m "chore: atualizar histórico de lives e vídeos [skip ci]" || exit 0
           git push

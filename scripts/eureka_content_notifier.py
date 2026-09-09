@@ -38,11 +38,12 @@ WHATSAPP_LIVES_GROUP = os.environ.get("WHATSAPP_LIVES_GROUP", "12036340263906534
 # Arquivos de histórico
 HISTORY_DIR = os.path.dirname(__file__)
 YOUTUBE_HISTORY_FILE = os.path.join(HISTORY_DIR, "posted_youtube_history.json")
-TWITCH_HISTORY_FILE = os.path.join(HISTORY_DIR, "posted_twitch_history.json")
+LIVE_HISTORY_FILE = os.path.join(HISTORY_DIR, "posted_live_history.json")
 
 # Identificadores Oficiais
 YOUTUBE_CHANNEL_ID = "UCgvbk72oiJLHQ6lsJjk2cvg"
 TWITCH_USERNAME = "francis_eureka"
+KICK_USERNAME = "franciseureka"
 
 
 def load_history(filepath):
@@ -64,7 +65,7 @@ def save_history(filepath, data):
 
 
 # ==========================================
-# 🟣 1. TWITCH - Notificação de Live On
+# 🔴 1. MULTISTREAM - Lives Simultâneas (Twitch, Kick, YouTube)
 # ==========================================
 
 def check_twitch_live():
@@ -90,6 +91,9 @@ def check_twitch_live():
             game = res.read().decode("utf-8").strip()
 
         return {
+            "platform": "Twitch",
+            "name": "Twitch",
+            "icon": "🟣",
             "uptime": uptime,
             "title": title or "🔴 Live On com Francis Eureka!",
             "game": game or "Variedades",
@@ -101,45 +105,175 @@ def check_twitch_live():
         return None
 
 
-def post_twitch_live(live):
-    history = load_history(TWITCH_HISTORY_FILE)
-    today_key = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+def check_kick_live():
+    """Consulta se Francis Eureka está ao vivo na Kick via API oficial."""
+    try:
+        url = f"https://kick.com/api/v2/channels/{KICK_USERNAME}"
+        req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"})
+        with urllib.request.urlopen(req, timeout=8) as res:
+            data = json.loads(res.read().decode("utf-8"))
+            livestream = data.get("livestream")
+            if not livestream:
+                return None
 
-    # Evita múltiplos alertas no mesmo dia se já notificou a sessão
-    last_notified = history.get("last_session", "")
-    if last_notified == today_key:
-        print("Live da Twitch já notificada hoje.")
+            title = livestream.get("session_title") or "🔴 Live On na Kick!"
+            categories = livestream.get("categories", [])
+            game = categories[0].get("name") if categories else "Variedades"
+            thumb = livestream.get("thumbnail", {}).get("url") if isinstance(livestream.get("thumbnail"), dict) else None
+
+            return {
+                "platform": "Kick",
+                "name": "Kick",
+                "icon": "🟢",
+                "title": title,
+                "game": game,
+                "url": f"https://kick.com/{KICK_USERNAME}",
+                "preview": thumb or "https://kick.com/favicon.ico",
+            }
+    except Exception as e:
+        print(f"Aviso ao checar Kick: {e}")
+        return None
+
+
+def check_youtube_live():
+    """Consulta se Francis Eureka está ao vivo no YouTube."""
+    try:
+        url = f"https://www.youtube.com/channel/{YOUTUBE_CHANNEL_ID}/live"
+        req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"})
+        with urllib.request.urlopen(req, timeout=10) as res:
+            html = res.read().decode("utf-8", errors="ignore")
+
+        m = re.search(r'ytInitialPlayerResponse\s*=\s*({.+?});', html)
+        if not m:
+            m = re.search(r'var ytInitialPlayerResponse = ({.+?});', html)
+
+        if m:
+            data = json.loads(m.group(1))
+            vr = data.get("videoDetails", {})
+            playability = data.get("playabilityStatus", {}).get("status")
+            micro = data.get("microformat", {}).get("playerMicroformatRenderer", {})
+            broadcast = micro.get("liveBroadcastDetails", {})
+            is_live_now = broadcast.get("isLiveNow") is True or (vr.get("isLive") is True and playability == "OK")
+
+            if is_live_now:
+                vid = vr.get("videoId")
+                watch_url = f"https://www.youtube.com/watch?v={vid}" if vid else f"https://www.youtube.com/channel/{YOUTUBE_CHANNEL_ID}/live"
+                thumb = f"https://i.ytimg.com/vi/{vid}/maxresdefault.jpg" if vid else None
+                return {
+                    "platform": "YouTube",
+                    "name": "YouTube",
+                    "icon": "🔴",
+                    "title": vr.get("title") or "🔴 Live On no YouTube!",
+                    "game": "Live Stream",
+                    "url": watch_url,
+                    "preview": thumb,
+                }
+        return None
+    except Exception as e:
+        print(f"Aviso ao checar YouTube Live: {e}")
+        return None
+
+
+def check_all_lives():
+    """Checa simultaneamente Twitch, Kick e YouTube Live."""
+    active_lives = []
+
+    tw = check_twitch_live()
+    if tw:
+        active_lives.append(tw)
+
+    kick = check_kick_live()
+    if kick:
+        active_lives.append(kick)
+
+    yt = check_youtube_live()
+    if yt:
+        active_lives.append(yt)
+
+    return active_lives
+
+
+def post_live_streams(active_lives):
+    history = load_history(LIVE_HISTORY_FILE)
+
+    if not active_lives:
+        # Se estava ao vivo antes e agora caiu tudo, reseta a sessão
+        if history.get("is_live_active") is True:
+            history["is_live_active"] = False
+            history["ended_at"] = datetime.now(timezone.utc).isoformat()
+            save_history(LIVE_HISTORY_FILE, history)
+            print("Live finalizada. Histórico resetado para a próxima transmissão.")
         return False
 
-    title = live["title"]
-    game = live["game"]
-    url = live["url"]
-    preview = live["preview"]
+    # Se já notificou essa sessão ao vivo, não repete notificação
+    if history.get("is_live_active") is True:
+        print("Live já notificada nesta sessão ativa.")
+        return False
 
-    # 1. Enviar para Discord
+    main = active_lives[0]
+    raw_title = next((l["title"] for l in active_lives if l.get("title")), "Live com Francis Eureka!")
+    clean_title = re.sub(r'^[🔴\s\-:]+', '', raw_title).strip() or raw_title
+    preview = next((l["preview"] for l in active_lives if l.get("preview")), None)
+    game = next((l["game"] for l in active_lives if l.get("game")), "Variedades")
+
+    # 1. Enviar para WhatsApp (Padoka dos Gamers)
+    if len(active_lives) == 1:
+        whatsapp_caption = (
+            f"🔴 Francis Eureka está ao vivo - \"{clean_title}\"\n\n"
+            f"👉 {main['url']}"
+        )
+    else:
+        links_lines = "\n".join([f"{l['icon']} {l['name']}: {l['url']}" for l in active_lives])
+        whatsapp_caption = (
+            f"🔴 Francis Eureka está ao vivo - \"{clean_title}\"\n\n"
+            f"Assista onde preferir:\n"
+            f"{links_lines}"
+        )
+    send_whatsapp_message(WHATSAPP_LIVES_GROUP, whatsapp_caption, media_url=preview)
+
+    # 2. Enviar para Discord (#🔴・lives-e-vídeos)
+    if len(active_lives) == 1:
+        desc = (
+            f"{main['icon']} **A live acabou de começar na {main['name']}!**\n\n"
+            f"🕹️ **Jogando:** `{game}`\n"
+            f"⚡ Vem interagir no chat, dar risada e jogar junto com a comunidade!"
+        )
+        fields = [
+            {
+                "name": "🔗 Assistir Agora",
+                "value": f"[👉 **Clique aqui para abrir a {main['name']}**]({main['url']})",
+                "inline": False,
+            }
+        ]
+        color = 9520895 if main["platform"] == "Twitch" else (5566085 if main["platform"] == "Kick" else 16711680)
+    else:
+        desc = (
+            f"🔴 **Transmissão Simultânea (Multistream) Ativa!**\n\n"
+            f"🕹️ **Jogando:** `{game}`\n"
+            f"⚡ Escolha sua plataforma favorita e venha trocar uma ideia com a comunidade!"
+        )
+        links_discord = "\n".join([f"{l['icon']} **{l['name']}:** [Assistir na {l['name']}]({l['url']})" for l in active_lives])
+        fields = [
+            {
+                "name": "📺 Links de Transmissão Simultânea",
+                "value": links_discord,
+                "inline": False,
+            }
+        ]
+        color = 16744192  # Laranja chamativo Multistream
+
     discord_payload = {
-        "content": "@everyone 🔴 **FRANCIS EUREKA ESTÁ AO VIVO NA TWITCH!** Vem colar na live!",
+        "content": "@everyone 🔴 **FRANCIS EUREKA ESTÁ AO VIVO!** Vem colar na transmissão!",
         "username": "Eureka Lives",
         "avatar_url": "https://static-cdn.jtvnw.net/jtv_user_pictures/twitch-profile_image-70x70.png",
         "embeds": [
             {
-                "title": f"🎮 {title}",
-                "url": url,
-                "description": (
-                    f"🟣 **A live acabou de começar!**\n\n"
-                    f"🕹️ **Jogando:** `{game}`\n"
-                    f"⚡ Vem interagir no chat, dar risada e jogar junto com a comunidade!"
-                ),
-                "color": 9520895,  # Roxo Twitch #9146FF
-                "fields": [
-                    {
-                        "name": "🔗 Assistir Agora",
-                        "value": f"[👉 **Clique aqui para abrir a Twitch**]({url})",
-                        "inline": False,
-                    }
-                ],
-                "image": {"url": f"{preview}?t={int(datetime.now().timestamp())}"},
-                "footer": {"text": "Comunidade Eureka • Twitch Ao Vivo"},
+                "title": f"🎮 {clean_title}",
+                "description": desc,
+                "color": color,
+                "fields": fields,
+                "image": {"url": f"{preview}?t={int(datetime.now().timestamp())}"} if preview else None,
+                "footer": {"text": "Comunidade Eureka • Transmissão Ao Vivo"},
                 "timestamp": datetime.now(timezone.utc).isoformat(),
             }
         ],
@@ -156,16 +290,11 @@ def post_twitch_live(live):
     except Exception as e:
         print(f"Erro ao enviar live no Discord: {e}")
 
-    # 2. Enviar para WhatsApp (Padoka dos Gamers) - Direto e sem excesso de texto
-    whatsapp_caption = (
-        f"🔴 Francis Eureka está ao vivo - \"{title}\"\n\n"
-        f"👉 {url}"
-    )
-    send_whatsapp_message(WHATSAPP_LIVES_GROUP, whatsapp_caption, media_url=preview)
-
-    history["last_session"] = today_key
-    history["last_title"] = title
-    save_history(TWITCH_HISTORY_FILE, history)
+    history["is_live_active"] = True
+    history["session_title"] = clean_title
+    history["started_at"] = datetime.now(timezone.utc).isoformat()
+    history["platforms"] = [l["name"] for l in active_lives]
+    save_history(LIVE_HISTORY_FILE, history)
     return True
 
 
@@ -390,17 +519,20 @@ def post_meme_notification(image_url, caption="", source_url=""):
 
 
 def run():
-    print("--- Verificando Notificações Eureka (Twitch & YouTube) ---")
+    print("--- Verificando Notificações Eureka (Multistream, YouTube & Memes) ---")
 
-    # 1. Twitch
-    live = check_twitch_live()
-    if live:
-        print(f"Twitch: {TWITCH_USERNAME} está AO VIVO!")
-        post_twitch_live(live)
+    # 1. Checagem de Lives Multistream (Twitch, Kick, YouTube)
+    active_lives = check_all_lives()
+    if active_lives:
+        names = ", ".join([l["name"] for l in active_lives])
+        print(f"LIVES AO VIVO DETECTADAS: {names}!")
+        post_live_streams(active_lives)
     else:
-        print(f"Twitch: {TWITCH_USERNAME} está offline.")
+        print("Lives: Nenhuma transmissão ao vivo no momento (Twitch, Kick, YouTube).")
+        # Mantém histórico em sincronia para detectar encerramento de lives
+        post_live_streams([])
 
-    # 2. YouTube
+    # 2. YouTube novos vídeos
     new_vids = check_youtube()
     print(f"YouTube: {new_vids} novos vídeos processados.")
 
