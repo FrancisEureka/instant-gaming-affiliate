@@ -22,14 +22,15 @@ jobs:
         with:
           python-version: '3.11'
 
-      - name: Executar bot de ofertas
+      - name: Executar bot de ofertas e jogos grátis
         run: |
           python scripts/instant_gaming_deals.py
+          python scripts/free_games_deals.py
 
       - name: Salvar histórico de postagens
         run: |
           git config --global user.name "Eureka Deals Bot"
           git config --global user.email "bot@franciseureka.com"
-          git add scripts/posted_deals_history.json
-          git commit -m "chore: atualizar histórico de ofertas [skip ci]" || exit 0
+          git add scripts/posted_deals_history.json scripts/posted_free_games_history.json
+          git commit -m "chore: atualizar histórico de ofertas e jogos grátis [skip ci]" || exit 0
           git push
