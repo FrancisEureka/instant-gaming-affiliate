@@ -1,5 +1,5 @@
 {
-  "name": "instant-gaming-affiliate",
+  "name": "eureka-gaming-affiliate",
   "version": "0.1.0",
   "private": true,
   "scripts": {
@@ -22,5 +22,6 @@
     "eslint-config-next": "16.2.4",
     "tailwindcss": "^4",
     "typescript": "^5"
-  }
+  },
+  "description": "Sistema automatizado de ofertas e jogos gratis da comunidade Eureka para Discord e WhatsApp"
 }

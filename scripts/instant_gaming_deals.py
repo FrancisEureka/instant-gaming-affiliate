@@ -84,7 +84,7 @@ def post_deal(deal):
     affiliate_link = build_affiliate_url(name)
 
     payload = {
-        "username": "Instant Gaming Ofertas",
+        "username": "Eureka Gaming Ofertas",
         "avatar_url": "https://gaming-cdn.com/images/favicon/favicon.png",
         "embeds": [
             {
@@ -120,7 +120,7 @@ def post_deal(deal):
                 ],
                 "image": {"url": deal["image"]},
                 "footer": {
-                    "text": "Instant Gaming • Cupom & Link de Afiliado: ?igr=franciseureka"
+                    "text": "Eureka Gaming • Cupom & Link de Afiliado: ?igr=franciseureka"
                 },
                 "timestamp": datetime.now(timezone.utc).isoformat(),
             }

@@ -1,36 +1,40 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# 🎮 Eureka Gaming Affiliate & Deals Bot
 
-## Getting Started
+Sistema autônomo na nuvem para busca, curadoria e publicação diária de **super ofertas de games** e **jogos 100% gratuitos** para a comunidade **Eureka**.
 
-First, run the development server:
+Publica automaticamente em paralelo no **Discord** e no **WhatsApp**.
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+---
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## 🎯 Canais e Grupos Integrados
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+| Tipo de Conteúdo | No Discord | No WhatsApp (Comunidade Eureka) |
+| :--- | :--- | :--- |
+| **Super Ofertas & Afiliados** | #🕹️・instant-gaming | Grupo **Ofertinhas** |
+| **Jogos 100% Grátis** | #🎁・jogos-grátis | Grupo **Jogos Grátis** |
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+---
 
-## Learn More
+## 🚀 Lojas e Programas Parceiros
+- [x] **Instant Gaming** (Afiliado oficial: ?igr=franciseureka - 3% de comissão)
+- [x] **Steam** (Especiais, ofertas do dia e jogos 100% grátis)
+- [x] **Epic Games Store** (Jogos gratuitos semanais de resgate permanente)
+- [x] **GOG.com** (Giveaways e jogos sem DRM)
+- [ ] *Próximos:* Nuuvem, Amazon Games, Green Man Gaming
 
-To learn more about Next.js, take a look at the following resources:
+---
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## ⏰ Agendamento Automático na Nuvem
+O robô roda **3 vezes ao dia** via **GitHub Actions** (100% autônomo na nuvem):
+- 🌅 **08:00** (Horário de Brasília)
+- ☀️ **12:00** (Horário de Brasília)
+- 🌆 **18:00** (Horário de Brasília)
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+---
 
-## Deploy on Vercel
+## ⚙️ Configuração de Secrets (WhatsApp)
+Para ativar o disparo no WhatsApp, adicione em **Settings > Secrets and variables > Actions**:
+- WHATSAPP_API_URL: URL da sua API (Evolution API / Z-API)
+- WHATSAPP_API_KEY: Chave da API
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Desenvolvido para a comunidade **Eureka**.
