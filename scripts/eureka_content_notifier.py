@@ -14,6 +14,7 @@ import json
 import os
 import re
 import sys
+import time
 import urllib.parse
 import urllib.request
 import xml.etree.ElementTree as ET
@@ -29,11 +30,11 @@ DISCORD_LIVES_WEBHOOK = "https://discord.com/api/webhooks/1547305895111958659/Wj
 DISCORD_MEMES_WEBHOOK = "https://discord.com/api/webhooks/1547306853677928551/D8Cbi17wScj6ZbMLjhvkMAzHRXqRmDQWMNcEQVmcjC16TIZvs41ibfmg8M6JtJfio6dp"
 
 # Configurações do WhatsApp (Evolution API)
-WHATSAPP_API_URL = os.environ.get("WHATSAPP_API_URL", "https://eureka-evolution.onrender.com")
-WHATSAPP_API_KEY = os.environ.get("WHATSAPP_API_KEY", "A829A3AB4468-4731-9173-1A15C8361FCB")
-WHATSAPP_INSTANCE = os.environ.get("WHATSAPP_INSTANCE", "Eureka")
+WHATSAPP_API_URL = (os.environ.get("WHATSAPP_API_URL") or "https://eureka-evolution.onrender.com").rstrip("/")
+WHATSAPP_API_KEY = os.environ.get("WHATSAPP_API_KEY") or "A829A3AB4468-4731-9173-1A15C8361FCB"
+WHATSAPP_INSTANCE = os.environ.get("WHATSAPP_INSTANCE") or "Eureka"
 # Grupo Padoka dos Gamers
-WHATSAPP_LIVES_GROUP = os.environ.get("WHATSAPP_LIVES_GROUP", "120363402639065341@g.us")
+WHATSAPP_LIVES_GROUP = os.environ.get("WHATSAPP_LIVES_GROUP") or "120363402639065341@g.us"
 
 # Arquivos de histórico
 HISTORY_DIR = os.path.dirname(__file__)
@@ -306,10 +307,18 @@ def get_latest_youtube_videos():
     """Lê o feed RSS oficial do canal do YouTube."""
     feed_url = f"https://www.youtube.com/feeds/videos.xml?channel_id={YOUTUBE_CHANNEL_ID}"
     req = urllib.request.Request(feed_url, headers={"User-Agent": "Mozilla/5.0"})
-    with urllib.request.urlopen(req, timeout=12) as res:
-        xml_content = res.read()
+    try:
+        with urllib.request.urlopen(req, timeout=12) as res:
+            xml_content = res.read()
+    except Exception as e:
+        print(f"Aviso ao ler feed do YouTube: {e}")
+        return []
 
-    root = ET.fromstring(xml_content)
+    try:
+        root = ET.fromstring(xml_content)
+    except Exception as e:
+        print(f"Aviso ao parsear XML do YouTube: {e}")
+        return []
     ns = {
         "atom": "http://www.w3.org/2005/Atom",
         "yt": "http://www.youtube.com/xml/schemas/2015",
@@ -458,21 +467,24 @@ def send_whatsapp_message(group_id, text, media_url=None):
             "fileName": "thumb.jpg",
         }
 
-    try:
-        req = urllib.request.Request(
-            endpoint,
-            data=json.dumps(payload).encode("utf-8"),
-            headers={
-                "Content-Type": "application/json",
-                "apikey": WHATSAPP_API_KEY,
-                "User-Agent": "Mozilla/5.0",
-            },
-        )
-        with urllib.request.urlopen(req, timeout=15) as res:
-            return res.status in (200, 201)
-    except Exception as e:
-        print(f"Aviso ao enviar mensagem para WhatsApp: {e}")
-        return False
+    for attempt in range(1, 4):
+        try:
+            req = urllib.request.Request(
+                endpoint,
+                data=json.dumps(payload).encode("utf-8"),
+                headers={
+                    "Content-Type": "application/json",
+                    "apikey": WHATSAPP_API_KEY,
+                    "User-Agent": "Mozilla/5.0",
+                },
+            )
+            with urllib.request.urlopen(req, timeout=45) as res:
+                return res.status in (200, 201)
+        except Exception as e:
+            print(f"Tentativa {attempt}/3 - Aviso ao enviar mensagem para WhatsApp: {e}")
+            if attempt < 3:
+                time.sleep(6)
+    return False
 
 
 # ==========================================

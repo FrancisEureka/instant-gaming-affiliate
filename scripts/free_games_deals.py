@@ -6,6 +6,7 @@ Plataformas: Steam, Epic Games Store, GOG, etc.
 
 import json
 import os
+import time
 import urllib.request
 from datetime import datetime, timezone
 
@@ -131,10 +132,10 @@ def post_free_game(game):
 
 def send_whatsapp_free_game(game):
     """Envia o jogo grátis para o grupo do WhatsApp caso as variáveis de ambiente estejam configuradas."""
-    api_url = os.environ.get("WHATSAPP_API_URL", "https://eureka-evolution.onrender.com")
-    api_key = os.environ.get("WHATSAPP_API_KEY", "A829A3AB4468-4731-9173-1A15C8361FCB")
-    instance = os.environ.get("WHATSAPP_INSTANCE", "Eureka")
-    group_id = os.environ.get("WHATSAPP_FREE_GAMES_GROUP", "120363409592479695@g.us")  # Grupo Jogos Grátis (Eureka)
+    api_url = (os.environ.get("WHATSAPP_API_URL") or "https://eureka-evolution.onrender.com").rstrip("/")
+    api_key = os.environ.get("WHATSAPP_API_KEY") or "A829A3AB4468-4731-9173-1A15C8361FCB"
+    instance = os.environ.get("WHATSAPP_INSTANCE") or "Eureka"
+    group_id = os.environ.get("WHATSAPP_FREE_GAMES_GROUP") or "120363409592479695@g.us"  # Grupo Jogos Grátis (Eureka)
 
     if not api_url or not api_key:
         return False
@@ -161,7 +162,7 @@ def send_whatsapp_free_game(game):
         f"⚡ _Comunidade Eureka • Jogos Grátis para PC_"
     )
 
-    endpoint = f"{api_url.rstrip('/')}/message/sendMedia/{instance}"
+    endpoint = f"{api_url}/message/sendMedia/{instance}"
     payload = {
         "number": group_id,
         "mediatype": "image",
@@ -171,21 +172,24 @@ def send_whatsapp_free_game(game):
         "fileName": f"{title}.jpg",
     }
 
-    try:
-        req = urllib.request.Request(
-            endpoint,
-            data=json.dumps(payload).encode("utf-8"),
-            headers={
-                "Content-Type": "application/json",
-                "apikey": api_key,
-                "User-Agent": "Mozilla/5.0",
-            },
-        )
-        with urllib.request.urlopen(req, timeout=15) as res:
-            return res.status in (200, 201)
-    except Exception as e:
-        print(f"Aviso ao enviar jogo grátis para o WhatsApp: {e}")
-        return False
+    for attempt in range(1, 4):
+        try:
+            req = urllib.request.Request(
+                endpoint,
+                data=json.dumps(payload).encode("utf-8"),
+                headers={
+                    "Content-Type": "application/json",
+                    "apikey": api_key,
+                    "User-Agent": "Mozilla/5.0",
+                },
+            )
+            with urllib.request.urlopen(req, timeout=45) as res:
+                return res.status in (200, 201)
+        except Exception as e:
+            print(f"Tentativa {attempt}/3 - Aviso ao enviar jogo grátis para o WhatsApp: {e}")
+            if attempt < 3:
+                time.sleep(6)
+    return False
 
 
 def run(max_games=2):

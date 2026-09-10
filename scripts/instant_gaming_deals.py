@@ -6,6 +6,7 @@ Afiliado: ?igr=franciseureka
 
 import json
 import os
+import time
 import urllib.parse
 import urllib.request
 from datetime import datetime, timezone
@@ -151,7 +152,7 @@ def post_deal(deal):
     })
 
     payload = {
-        "username": "Eureka Gaming Ofertas",
+        "username": "Eureka Ofertas",
         "avatar_url": "https://gaming-cdn.com/images/favicon/favicon.png",
         "embeds": [
             {
@@ -187,10 +188,10 @@ def post_deal(deal):
 
 def send_whatsapp_deal(deal):
     """Envia a oferta para o grupo do WhatsApp caso as variáveis de ambiente estejam configuradas."""
-    api_url = os.environ.get("WHATSAPP_API_URL", "https://eureka-evolution.onrender.com")
-    api_key = os.environ.get("WHATSAPP_API_KEY", "A829A3AB4468-4731-9173-1A15C8361FCB")
-    instance = os.environ.get("WHATSAPP_INSTANCE", "Eureka")
-    group_id = os.environ.get("WHATSAPP_DEALS_GROUP", "120363431894288091@g.us")  # Grupo Ofertinhas (Eureka)
+    api_url = (os.environ.get("WHATSAPP_API_URL") or "https://eureka-evolution.onrender.com").rstrip("/")
+    api_key = os.environ.get("WHATSAPP_API_KEY") or "A829A3AB4468-4731-9173-1A15C8361FCB"
+    instance = os.environ.get("WHATSAPP_INSTANCE") or "Eureka"
+    group_id = os.environ.get("WHATSAPP_DEALS_GROUP") or "120363431894288091@g.us"  # Grupo Ofertinhas (Eureka)
 
     if not api_url or not api_key:
         return False
@@ -216,7 +217,7 @@ def send_whatsapp_deal(deal):
     )
 
     # Endpoint padrão da Evolution API / gateways compatíveis
-    endpoint = f"{api_url.rstrip('/')}/message/sendMedia/{instance}"
+    endpoint = f"{api_url}/message/sendMedia/{instance}"
     payload = {
         "number": group_id,
         "mediatype": "image",
@@ -226,21 +227,24 @@ def send_whatsapp_deal(deal):
         "fileName": f"{name}.jpg",
     }
 
-    try:
-        req = urllib.request.Request(
-            endpoint,
-            data=json.dumps(payload).encode("utf-8"),
-            headers={
-                "Content-Type": "application/json",
-                "apikey": api_key,
-                "User-Agent": "Mozilla/5.0",
-            },
-        )
-        with urllib.request.urlopen(req, timeout=15) as res:
-            return res.status in (200, 201)
-    except Exception as e:
-        print(f"Aviso ao enviar oferta para o WhatsApp: {e}")
-        return False
+    for attempt in range(1, 4):
+        try:
+            req = urllib.request.Request(
+                endpoint,
+                data=json.dumps(payload).encode("utf-8"),
+                headers={
+                    "Content-Type": "application/json",
+                    "apikey": api_key,
+                    "User-Agent": "Mozilla/5.0",
+                },
+            )
+            with urllib.request.urlopen(req, timeout=45) as res:
+                return res.status in (200, 201)
+        except Exception as e:
+            print(f"Tentativa {attempt}/3 - Aviso ao enviar oferta para o WhatsApp: {e}")
+            if attempt < 3:
+                time.sleep(6)
+    return False
 
 
 def run(max_deals=2):

@@ -2,9 +2,10 @@ name: Eureka Gaming Deals & Free Games
 
 on:
   schedule:
-    # Executa 3 vezes ao dia: às 08:00, 12:00 e 18:00 (Horário de Brasília)
-    # 11:00 UTC = 08:00 BRT | 15:00 UTC = 12:00 BRT | 21:00 UTC = 18:00 BRT
-    - cron: '0 11,15,21 * * *'
+    # Executa 3 vezes ao dia: às 08:10, 12:10 e 18:10 (Horário de Brasília)
+    # Minuto 10 evita o congestionamento mundial de início de hora no GitHub Actions
+    # 11:10 UTC = 08:10 BRT | 15:10 UTC = 12:10 BRT | 21:10 UTC = 18:10 BRT
+    - cron: '10 11,15,21 * * *'
   workflow_dispatch: # Permite disparar manualmente pelo botão no GitHub
 
 jobs:
@@ -22,13 +23,18 @@ jobs:
         with:
           python-version: '3.11'
 
+      - name: Acordar servidor WhatsApp (Render)
+        run: |
+          echo "Acordando Evolution API no Render..."
+          curl -s -m 45 https://eureka-evolution.onrender.com/ || true
+
       - name: Executar bot de ofertas e jogos grátis
         env:
-          WHATSAPP_API_URL: ${{ secrets.WHATSAPP_API_URL }}
-          WHATSAPP_API_KEY: ${{ secrets.WHATSAPP_API_KEY }}
-          WHATSAPP_INSTANCE: ${{ secrets.WHATSAPP_INSTANCE }}
-          WHATSAPP_DEALS_GROUP: ${{ secrets.WHATSAPP_DEALS_GROUP }}
-          WHATSAPP_FREE_GAMES_GROUP: ${{ secrets.WHATSAPP_FREE_GAMES_GROUP }}
+          WHATSAPP_API_URL: ${{ secrets.WHATSAPP_API_URL || 'https://eureka-evolution.onrender.com' }}
+          WHATSAPP_API_KEY: ${{ secrets.WHATSAPP_API_KEY || 'A829A3AB4468-4731-9173-1A15C8361FCB' }}
+          WHATSAPP_INSTANCE: ${{ secrets.WHATSAPP_INSTANCE || 'Eureka' }}
+          WHATSAPP_DEALS_GROUP: ${{ secrets.WHATSAPP_DEALS_GROUP || '120363431894288091@g.us' }}
+          WHATSAPP_FREE_GAMES_GROUP: ${{ secrets.WHATSAPP_FREE_GAMES_GROUP || '120363409592479695@g.us' }}
         run: |
           python scripts/instant_gaming_deals.py
           python scripts/free_games_deals.py

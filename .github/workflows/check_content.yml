@@ -21,12 +21,17 @@ jobs:
         with:
           python-version: '3.11'
 
+      - name: Acordar servidor WhatsApp (Render)
+        run: |
+          echo "Acordando Evolution API no Render..."
+          curl -s -m 45 https://eureka-evolution.onrender.com/ || true
+
       - name: Executar Notificador de Conteúdo
         env:
-          WHATSAPP_API_URL: ${{ secrets.WHATSAPP_API_URL }}
-          WHATSAPP_API_KEY: ${{ secrets.WHATSAPP_API_KEY }}
-          WHATSAPP_INSTANCE: ${{ secrets.WHATSAPP_INSTANCE }}
-          WHATSAPP_LIVES_GROUP: ${{ secrets.WHATSAPP_LIVES_GROUP }}
+          WHATSAPP_API_URL: ${{ secrets.WHATSAPP_API_URL || 'https://eureka-evolution.onrender.com' }}
+          WHATSAPP_API_KEY: ${{ secrets.WHATSAPP_API_KEY || 'A829A3AB4468-4731-9173-1A15C8361FCB' }}
+          WHATSAPP_INSTANCE: ${{ secrets.WHATSAPP_INSTANCE || 'Eureka' }}
+          WHATSAPP_LIVES_GROUP: ${{ secrets.WHATSAPP_LIVES_GROUP || '120363402639065341@g.us' }}
         run: |
           python scripts/eureka_content_notifier.py
 
