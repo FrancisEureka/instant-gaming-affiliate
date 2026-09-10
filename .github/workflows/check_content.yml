@@ -32,6 +32,8 @@ jobs:
           WHATSAPP_API_KEY: ${{ secrets.WHATSAPP_API_KEY || 'A829A3AB4468-4731-9173-1A15C8361FCB' }}
           WHATSAPP_INSTANCE: ${{ secrets.WHATSAPP_INSTANCE || 'Eureka' }}
           WHATSAPP_LIVES_GROUP: ${{ secrets.WHATSAPP_LIVES_GROUP || '120363402639065341@g.us' }}
+          WHATSAPP_DEALS_GROUP: ${{ secrets.WHATSAPP_DEALS_GROUP || '120363431894288091@g.us' }}
+          WHATSAPP_FREE_GAMES_GROUP: ${{ secrets.WHATSAPP_FREE_GAMES_GROUP || '120363409592479695@g.us' }}
         run: |
           python scripts/eureka_content_notifier.py
 
@@ -39,6 +41,6 @@ jobs:
         run: |
           git config --global user.name "Eureka Bot"
           git config --global user.email "bot@franciseureka.com"
-          git add scripts/posted_youtube_history.json scripts/posted_live_history.json
-          git commit -m "chore: atualizar histórico de lives e vídeos [skip ci]" || exit 0
+          git add scripts/posted_*.json
+          git commit -m "chore: atualizar histórico de postagens [skip ci]" || exit 0
           git push

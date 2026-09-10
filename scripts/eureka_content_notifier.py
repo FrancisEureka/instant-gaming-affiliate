@@ -36,8 +36,10 @@ DISCORD_MEMES_WEBHOOK = "https://discord.com/api/webhooks/1547306853677928551/D8
 WHATSAPP_API_URL = (os.environ.get("WHATSAPP_API_URL") or "https://eureka-evolution.onrender.com").rstrip("/")
 WHATSAPP_API_KEY = os.environ.get("WHATSAPP_API_KEY") or "A829A3AB4468-4731-9173-1A15C8361FCB"
 WHATSAPP_INSTANCE = os.environ.get("WHATSAPP_INSTANCE") or "Eureka"
-# Grupo Padoka dos Gamers
+# Grupo Padoka dos Gamers (destinado a novos vídeos do YouTube e memes)
 WHATSAPP_LIVES_GROUP = os.environ.get("WHATSAPP_LIVES_GROUP") or "120363402639065341@g.us"
+# Usuário definiu que no Padoka só entram novos vídeos do YouTube e memes do Instagram
+NOTIFY_LIVES_ON_WHATSAPP = False
 
 # Arquivos de histórico
 HISTORY_DIR = os.path.dirname(__file__)
@@ -233,7 +235,8 @@ def post_live_streams(active_lives):
             f"Assista onde preferir:\n"
             f"{links_lines}"
         )
-    send_whatsapp_message(WHATSAPP_LIVES_GROUP, whatsapp_caption, media_url=preview)
+    if NOTIFY_LIVES_ON_WHATSAPP:
+        send_whatsapp_message(WHATSAPP_LIVES_GROUP, whatsapp_caption, media_url=preview)
 
     # 2. Enviar para Discord (#🔴・lives-e-vídeos)
     if len(active_lives) == 1:
@@ -550,6 +553,13 @@ def run():
     # 2. YouTube novos vídeos
     new_vids = check_youtube()
     print(f"YouTube: {new_vids} novos vídeos processados.")
+
+    # 3. Ofertas e Jogos Grátis (agendamento inteligente por slots: 08h, 12h, 18h BRT)
+    try:
+        from daily_scheduler import check_and_post_deals_slots
+        check_and_post_deals_slots()
+    except Exception as e:
+        print(f"Erro ao verificar agendamento de ofertas: {e}")
 
 
 if __name__ == "__main__":
