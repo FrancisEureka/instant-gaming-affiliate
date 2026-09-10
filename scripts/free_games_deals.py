@@ -1,11 +1,14 @@
 """
-Free Games Daily Poster for Discord
-Canal: #🎁・jogos-grátis
-Plataformas: Steam, Epic Games Store, GOG, etc.
+Free Games Daily Poster for Discord and WhatsApp
+Canal Discord: #🎁・jogos-grátis
+Grupo WhatsApp: Eureka - Jogos Grátis
+Lojas suportadas: Steam, Epic Games Store, IndieGala, GOG, Itch.io, Stove, etc.
 """
 
 import json
 import os
+import re
+import ssl
 import time
 import urllib.request
 from datetime import datetime, timezone
@@ -32,26 +35,76 @@ def save_history(history):
         print(f"Erro ao salvar histórico de jogos grátis: {e}")
 
 
-def get_free_games():
-    """Busca jogos 100% gratuitos para PC de lojas oficiais (Steam, Epic, GOG)."""
-    platforms = ["steam", "epic-games-store", "gog"]
-    all_games = []
+def clean_game_data(game):
+    """Higieniza o título e identifica com precisão a loja/plataforma (IndieGala, Steam, Epic, GOG, etc.)."""
+    raw_title = game.get("title", "Jogo Grátis")
+    platforms = game.get("platforms", "PC")
+    desc = game.get("description", "").strip()
 
-    for plat in platforms:
-        url = f"https://www.gamerpower.com/api/giveaways?platform={plat}&type=game"
-        req = urllib.request.Request(
-            url,
-            headers={
-                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
-            },
-        )
+    title_lower = raw_title.lower()
+    desc_lower = desc.lower()
+    plat_lower = platforms.lower()
+
+    if "indiegala" in title_lower or "indiegala" in desc_lower:
+        store_name = "IndieGala (PC / DRM-Free)"
+    elif "epic" in title_lower or "epic" in plat_lower:
+        store_name = "Epic Games Store"
+    elif "steam" in title_lower or "steam" in plat_lower:
+        store_name = "Steam"
+    elif "gog" in title_lower or "gog" in plat_lower:
+        store_name = "GOG.com"
+    elif "itch.io" in title_lower or "itchio" in title_lower or "itch" in plat_lower:
+        store_name = "Itch.io (PC / DRM-Free)"
+    elif "stove" in title_lower or "stove" in plat_lower:
+        store_name = "Smilegate Stove"
+    elif "prime" in title_lower or "amazon" in title_lower:
+        store_name = "Prime Gaming"
+    else:
+        store_name = platforms
+
+    clean_title = raw_title
+    for suffix in [
+        "(IndieGala) Giveaway", "(indiegala) giveaway", "IndieGala Giveaway",
+        "(Epic Games) Giveaway", "(epic games) giveaway", "Epic Games Giveaway",
+        "(Steam) Key Giveaway", "(Steam) Giveaway", "Steam Giveaway",
+        "(Itch.io) Giveaway", "(itch.io) Giveaway", "(itchio) Giveaway", "Itch.io Giveaway",
+        "(Stove) Giveaway", "(GOG) Giveaway", "Key Giveaway", "Giveaway",
+        "(itch.io)", "(Itch.io)", "(Steam)", "(Epic Games)", "(IndieGala)", "(Stove)", "(GOG)"
+    ]:
+        clean_title = clean_title.replace(suffix, "").strip()
+
+    clean_title = clean_title.rstrip(" -–:()")
+
+    return {
+        "title": clean_title,
+        "store": store_name,
+        "original_title": raw_title,
+    }
+
+
+def get_free_games():
+    """Busca jogos 100% gratuitos para PC de fontes confiáveis (IndieGala, Steam, Epic Games, GOG, Itch.io, Stove)."""
+    endpoints = [
+        "https://www.gamerpower.com/api/giveaways?platform=pc&type=game",
+        "https://www.gamerpower.com/api/giveaways?platform=steam&type=game",
+        "https://www.gamerpower.com/api/giveaways?platform=epic-games-store&type=game",
+        "https://www.gamerpower.com/api/giveaways?platform=gog&type=game",
+    ]
+    all_games = []
+    headers = {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+    }
+    ctx = ssl.create_default_context()
+
+    for url in endpoints:
+        req = urllib.request.Request(url, headers=headers)
         try:
-            with urllib.request.urlopen(req, timeout=12) as res:
+            with urllib.request.urlopen(req, context=ctx, timeout=15) as res:
                 data = json.loads(res.read().decode("utf-8"))
                 if isinstance(data, list):
                     all_games.extend(data)
         except Exception as e:
-            print(f"Aviso ao consultar plataforma {plat}: {e}")
+            print(f"Aviso ao consultar endpoint {url}: {e}")
 
     # Remove duplicados por ID
     unique_games = {}
@@ -64,16 +117,15 @@ def get_free_games():
 
 
 def post_free_game(game):
-    title = game.get("title", "Jogo Grátis")
-    platforms = game.get("platforms", "PC")
+    info = clean_game_data(game)
+    title = info["title"]
+    store_name = info["store"]
     worth = game.get("worth", "N/A")
     giveaway_url = game.get("open_giveaway_url", "")
     image_url = game.get("image", "")
     description = game.get("description", "")
     end_date = game.get("end_date", "")
 
-    # Limita tamanho da descrição para manter o embed enxuto
-    # Limita tamanho da descrição para manter a mensagem bem estruturada
     if len(description) > 280:
         description = description[:277] + "..."
 
@@ -95,8 +147,8 @@ def post_free_game(game):
                 "inline": True,
             },
             {
-                "name": "🔑 Plataforma",
-                "value": platforms,
+                "name": "🔑 Loja / Plataforma",
+                "value": store_name,
                 "inline": True,
             },
             {
@@ -140,8 +192,9 @@ def send_whatsapp_free_game(game):
     if not api_url or not api_key:
         return False
 
-    title = game.get("title", "Jogo Grátis")
-    platforms = game.get("platforms", "PC")
+    info = clean_game_data(game)
+    title = info["title"]
+    store_name = info["store"]
     worth = game.get("worth", "N/A")
     giveaway_url = game.get("open_giveaway_url", "")
     description = game.get("description", "").strip()
@@ -155,7 +208,7 @@ def send_whatsapp_free_game(game):
         f"🎁 *JOGO 100% GRÁTIS DISPONÍVEL!*\n\n"
         f"🎮 *{title}*\n"
         f"🏷️ Preço Original: {worth_text}\n"
-        f"🔑 Plataforma: {platforms}\n"
+        f"🔑 Loja / Plataforma: {store_name}\n"
         f"{desc_section}\n"
         f"📥 *Resgate agora para a sua conta antes do fim da promoção:*\n"
         f"{giveaway_url}\n\n"
@@ -202,7 +255,8 @@ def run(max_games=2):
         if gid in history:
             continue
 
-        print(f"Postando jogo grátis: {game.get('title')}")
+        info = clean_game_data(game)
+        print(f"Postando jogo grátis: {info['title']} ({info['store']})")
         discord_ok = post_free_game(game)
         whatsapp_ok = send_whatsapp_free_game(game)
 
@@ -218,4 +272,3 @@ def run(max_games=2):
 
 if __name__ == "__main__":
     run()
-
