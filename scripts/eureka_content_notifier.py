@@ -23,8 +23,11 @@ from datetime import datetime, timezone
 if hasattr(sys.stdout, "reconfigure"):
     sys.stdout.reconfigure(encoding="utf-8")
 
-# Webhook do Discord para #🔴・lives-e-vídeos
+# Webhook do Discord para #🔴・lives
 DISCORD_LIVES_WEBHOOK = "https://discord.com/api/webhooks/1547305895111958659/WjO2GnIrPjr6SEpwgZMTwTmEUKMis1p49FdYweVBPodOj9_Rp-GEwJR1GTMn9FW_09P0"
+
+# Webhook do Discord para #🎬・vídeos
+DISCORD_VIDEOS_WEBHOOK = "https://discord.com/api/webhooks/1547583809527095358/DXWbssLZeGd5xXaEx5RnAUsneDQ7CkMILwmoqKJJEEbTPXnfuuCrBqRlPZYxoQR7tlQY"
 
 # Webhook do Discord para #😂・memes
 DISCORD_MEMES_WEBHOOK = "https://discord.com/api/webhooks/1547306853677928551/D8Cbi17wScj6ZbMLjhvkMAzHRXqRmDQWMNcEQVmcjC16TIZvs41ibfmg8M6JtJfio6dp"
@@ -395,7 +398,7 @@ def post_youtube_video(video):
     }
 
     req = urllib.request.Request(
-        DISCORD_LIVES_WEBHOOK,
+        DISCORD_VIDEOS_WEBHOOK,
         data=json.dumps(discord_payload).encode("utf-8"),
         headers={"Content-Type": "application/json", "User-Agent": "Mozilla/5.0"},
     )
