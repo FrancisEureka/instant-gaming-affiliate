@@ -39,7 +39,7 @@ WHATSAPP_INSTANCE = os.environ.get("WHATSAPP_INSTANCE") or "Eureka"
 # Grupo Padoka dos Gamers (destinado a novos vídeos do YouTube e memes)
 WHATSAPP_LIVES_GROUP = os.environ.get("WHATSAPP_LIVES_GROUP") or "120363402639065341@g.us"
 # Usuário definiu que no Padoka só entram novos vídeos do YouTube e memes do Instagram
-NOTIFY_LIVES_ON_WHATSAPP = False
+NOTIFY_LIVES_ON_WHATSAPP = True
 
 # Arquivos de histórico
 HISTORY_DIR = os.path.dirname(__file__)
@@ -353,6 +353,17 @@ def get_latest_youtube_videos():
         if len(description) > 280:
             description = description[:277] + "..."
 
+        # Filtro de seguranca: Ignora VODs de lives passadas do Restream e Shorts
+        title_lower = title.lower()
+        desc_lower = description.lower() if description else ""
+        if any(tag in title_lower for tag in ["🔴 ao vivo", "🔴 live", "ao vivo:", "[live]", "restream"]):
+            print(f"[Filtro YouTube] Ignorando gravacao de live passada: {title}")
+            continue
+
+        if "#shorts" in title_lower or "#shorts" in desc_lower or "/shorts/" in link:
+            print(f"[Filtro YouTube] Ignorando Short: {title}")
+            continue
+
         videos.append({
             "id": video_id,
             "title": title,
@@ -533,7 +544,8 @@ def post_meme_notification(image_url, caption="", source_url=""):
     if source_url:
         wa_caption += f"\n👉 {source_url}"
 
-    send_whatsapp_message(WHATSAPP_LIVES_GROUP, wa_caption, media_url=image_url)
+    # Memes desativados no WhatsApp Padoka por solicitação do usuário (enviados apenas ao Discord)
+    # send_whatsapp_message(WHATSAPP_LIVES_GROUP, wa_caption, media_url=image_url)
 
 
 def run():
