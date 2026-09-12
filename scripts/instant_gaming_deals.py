@@ -156,18 +156,27 @@ def post_deal(deal):
         "avatar_url": "https://gaming-cdn.com/images/favicon/favicon.png",
         "embeds": [
             {
-                "title": f"🔥 {name} com -{discount}% de Desconto!",
+                "author": {
+                    "name": "INSTANT GAMING • CHAVE DIGITAL (STEAM / PC) 🎮",
+                    "icon_url": "https://cdn.jsdelivr.net/gh/walkxcode/dashboard-icons/png/steam.png",
+                    "url": affiliate_link,
+                },
+                "thumbnail": {
+                    "url": "https://cdn.jsdelivr.net/gh/walkxcode/dashboard-icons/png/steam.png",
+                },
+                "title": f"🔥 [STEAM] {name} com -{discount}% de Desconto!",
                 "url": affiliate_link,
                 "description": (
                     f"⚡ **Super Oferta na Instant Gaming!**\n"
-                    f"Aproveite as chaves digitais com preço reduzido e ativação imediata.\n"
+                    f"Chave digital para ativação na **Steam** com preço reduzido.\n"
                     f"Ao comprar pelo link, você apoia diretamente a comunidade do Eureka sem pagar nada a mais por isso!"
                 ),
                 "color": 16744192,  # Laranja Instant Gaming #FF7F00
                 "fields": fields,
                 "image": {"url": deal["image"]},
                 "footer": {
-                    "text": "Eureka Gaming • Cupom & Link de Afiliado: ?igr=franciseureka"
+                    "text": "Eureka Gaming • Chave Steam Ativável • Cupom: ?igr=franciseureka",
+                    "icon_url": "https://cdn.jsdelivr.net/gh/walkxcode/dashboard-icons/png/steam.png",
                 },
                 "timestamp": datetime.now(timezone.utc).isoformat(),
             }
@@ -205,14 +214,15 @@ def send_whatsapp_deal(deal):
     genres_line = f"🏷️ Gêneros: {deal['genres']}\n" if deal.get("genres") else ""
 
     caption = (
+        f"🏷️ *PLATAFORMA:* *【 STEAM / PC DIGITAL 】*\n"
         f"🔥 *OFERTA DO DIA NA INSTANT GAMING!*\n\n"
-        f"🎮 *{name}* com *-{discount}% de Desconto!*\n"
+        f"🕹️ *{name}* com *-{discount}% de Desconto!*\n"
         f"💰 De: ~{orig_price}~ por APENAS *{price}*\n"
         f"🔑 Plataforma: Steam / PC Digital\n"
         f"{genres_line}"
         f"{desc_section}\n"
         f"🛒 *Garanta o seu jogo com desconto pelo link de parceiro:*\n"
-        f"{affiliate_link}\n\n"
+        f"👉 {affiliate_link}\n\n"
         f"⚡ _Ativação imediata • Comunidade Eureka_"
     )
 

@@ -116,6 +116,59 @@ def get_free_games():
     return list(unique_games.values())
 
 
+
+def get_platform_branding(store_name):
+    """Retorna o nome padronizado, URL do logo/ícone e a cor temática da plataforma."""
+    s = store_name.lower()
+    if "epic" in s:
+        return {
+            "name": "EPIC GAMES STORE",
+            "icon": "https://cdn.jsdelivr.net/gh/walkxcode/dashboard-icons/png/epic-games.png",
+            "color": 3223857,  # #313131 (Cinza Escuro Epic)
+        }
+    if "steam" in s:
+        return {
+            "name": "STEAM",
+            "icon": "https://cdn.jsdelivr.net/gh/walkxcode/dashboard-icons/png/steam.png",
+            "color": 1779768,  # #1B2838 (Azul Steam)
+        }
+    if "gog" in s:
+        return {
+            "name": "GOG.COM",
+            "icon": "https://cdn.iconscout.com/icon/free/png-512/free-gog-galaxy-3628784-3030030.png",
+            "color": 9055202,  # #8A2BE2 (Roxo GOG)
+        }
+    if "indiegala" in s:
+        return {
+            "name": "INDIEGALA",
+            "icon": "https://cdn.iconscout.com/icon/free/png-512/free-indiegala-3628830-3030076.png",
+            "color": 15093760,  # #E65100 (Laranja IndieGala)
+        }
+    if "prime" in s or "amazon" in s:
+        return {
+            "name": "PRIME GAMING",
+            "icon": "https://cdn.jsdelivr.net/gh/walkxcode/dashboard-icons/png/amazon-prime.png",
+            "color": 43233,  # #00A8E1 (Azul Ciano Prime)
+        }
+    if "itch" in s:
+        return {
+            "name": "ITCH.IO",
+            "icon": "https://cdn.jsdelivr.net/gh/walkxcode/dashboard-icons/png/itch.png",
+            "color": 16407644,  # #FA5C5C (Vermelho Itch)
+        }
+    if "stove" in s:
+        return {
+            "name": "SMILEGATE STOVE",
+            "icon": "https://cdn-icons-png.flaticon.com/512/686/686589.png",
+            "color": 16733986,  # #FF5722 (Laranja Stove)
+        }
+    return {
+        "name": store_name.upper(),
+        "icon": "https://cdn-icons-png.flaticon.com/512/686/686589.png",
+        "color": 3066993,  # #2ECC71 (Verde Esmeralda)
+    }
+
+
 def post_free_game(game):
     info = clean_game_data(game)
     title = info["title"]
@@ -126,20 +179,33 @@ def post_free_game(game):
     description = game.get("description", "")
     end_date = game.get("end_date", "")
 
+    branding = get_platform_branding(store_name)
+    plat_name = branding["name"]
+    plat_icon = branding["icon"]
+    plat_color = branding["color"]
+
     if len(description) > 280:
         description = description[:277] + "..."
 
-    worth_text = f"~~{worth}~~ ➡️ **GRÁTIS (100% OFF)**" if worth != "N/A" else "**100% GRÁTIS**"
+    worth_text = f"~~{worth}~~ ➔ **GRÁTIS (100% OFF)**" if worth != "N/A" else "**100% GRÁTIS**"
 
     embed = {
-        "title": f"🎁 JOGO 100% GRÁTIS: {title}",
+        "author": {
+            "name": f"DISPONÍVEL NA {plat_name} 🎮",
+            "icon_url": plat_icon,
+            "url": giveaway_url,
+        },
+        "title": f"🎁 [{plat_name}] {title} (100% GRÁTIS)",
         "url": giveaway_url,
         "description": (
             f"⚡ **Novo jogo gratuito disponível para resgate permanente!**\n"
-            f"Adicione à sua biblioteca antes do fim da promoção para ficar com ele para sempre.\n\n"
+            f"Adicione à sua biblioteca na **{store_name}** para ficar com ele para sempre.\n\n"
             f"📖 **Sobre o jogo:**\n{description}"
         ),
-        "color": 3066993,  # Verde Esmeralda #2ECC71
+        "color": plat_color,
+        "thumbnail": {
+            "url": plat_icon,
+        },
         "fields": [
             {
                 "name": "🏷️ Preço Original",
@@ -147,26 +213,27 @@ def post_free_game(game):
                 "inline": True,
             },
             {
-                "name": "🔑 Loja / Plataforma",
-                "value": store_name,
+                "name": "🔑 Plataforma de Ativação",
+                "value": f"**{store_name}**",
                 "inline": True,
             },
             {
                 "name": "📥 Onde Resgatar",
-                "value": f"[👉 **Clique aqui para resgatar na loja**]({giveaway_url})",
+                "value": f"[👉 **Clique aqui para resgatar na {plat_name}**]({giveaway_url})",
                 "inline": False,
             },
         ],
         "image": {"url": image_url} if image_url else None,
         "footer": {
-            "text": "Comunidade Eureka • Jogos 100% Grátis para PC" + (f" • Válido até: {end_date}" if end_date and end_date != "N/A" else "")
+            "text": f"Comunidade Eureka • Jogos 100% Grátis ({plat_name})" + (f" • Válido até: {end_date}" if end_date and end_date != "N/A" else ""),
+            "icon_url": plat_icon,
         },
         "timestamp": datetime.now(timezone.utc).isoformat(),
     }
 
     payload = {
-        "username": "Eureka Jogos Grátis",
-        "avatar_url": "https://cdn-icons-png.flaticon.com/512/686/686589.png",
+        "username": f"Eureka Jogos Grátis [{plat_name}]",
+        "avatar_url": plat_icon,
         "embeds": [embed],
     }
 
@@ -204,14 +271,18 @@ def send_whatsapp_free_game(game):
 
     desc_section = f"\n📖 *Sobre o jogo:*\n_{description}_\n" if description else ""
 
+    branding = get_platform_branding(store_name)
+    plat_name = branding["name"]
+
     caption = (
+        f"🎮 *PLATAFORMA:* *【 {plat_name} 】*\n"
         f"🎁 *JOGO 100% GRÁTIS DISPONÍVEL!*\n\n"
-        f"🎮 *{title}*\n"
+        f"🕹️ *{title}*\n"
         f"🏷️ Preço Original: {worth_text}\n"
-        f"🔑 Loja / Plataforma: {store_name}\n"
+        f"🔑 Onde Ativar: *{store_name}*\n"
         f"{desc_section}\n"
         f"📥 *Resgate agora para a sua conta antes do fim da promoção:*\n"
-        f"{giveaway_url}\n\n"
+        f"👉 {giveaway_url}\n\n"
         f"⚡ _Comunidade Eureka • Jogos Grátis para PC_"
     )
 
