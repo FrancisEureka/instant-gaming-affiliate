@@ -1,19 +1,19 @@
-name: Eureka Lives & Videos Notifier
+name: Eureka Lives, Videos, Games & Deals Notifier
 
 on:
   schedule:
-    # Executa a cada 15 minutos para checar abertura de live na Twitch e novos vídeos no YouTube
+    # Executa a cada 15 minutos para checar lives, videos, jogos gratis e ofertas
     - cron: '*/15 * * * *'
-  workflow_dispatch: # Permite disparar manualmente pelo botão no GitHub
+  workflow_dispatch: # Permite disparar manualmente pelo botao no GitHub
 
 jobs:
   check-content:
     runs-on: ubuntu-latest
     permissions:
-      contents: write # Permite salvar o histórico (posted_youtube_history.json, posted_live_history.json)
+      contents: write # Permite salvar o historico (posted_*.json)
 
     steps:
-      - name: Checkout repositório
+      - name: Checkout repositorio
         uses: actions/checkout@v4
 
       - name: Configurar Python
@@ -26,7 +26,7 @@ jobs:
           echo "Acordando Evolution API no Render..."
           curl -s -m 45 https://eureka-evolution.onrender.com/ || true
 
-      - name: Executar Notificador de Conteúdo
+      - name: Executar Notificador Geral (Conteudo, Jogos Gratis e Ofertas)
         env:
           WHATSAPP_API_URL: ${{ secrets.WHATSAPP_API_URL || 'https://eureka-evolution.onrender.com' }}
           WHATSAPP_API_KEY: ${{ secrets.WHATSAPP_API_KEY || 'A829A3AB4468-4731-9173-1A15C8361FCB' }}
@@ -35,12 +35,17 @@ jobs:
           WHATSAPP_DEALS_GROUP: ${{ secrets.WHATSAPP_DEALS_GROUP || '120363431894288091@g.us' }}
           WHATSAPP_FREE_GAMES_GROUP: ${{ secrets.WHATSAPP_FREE_GAMES_GROUP || '120363409592479695@g.us' }}
         run: |
+          echo "--- 1. Checando Lives e Videos/Shorts ---"
           python scripts/eureka_content_notifier.py
+          echo "--- 2. Checando Jogos 100% Gratis Imediatos ---"
+          python scripts/free_games_deals.py
+          echo "--- 3. Checando Ofertas Instant Gaming ---"
+          python scripts/instant_gaming_deals.py
 
-      - name: Salvar histórico de postagens
+      - name: Salvar historico de postagens
         run: |
           git config --global user.name "Eureka Bot"
           git config --global user.email "bot@franciseureka.com"
           git add scripts/posted_*.json
-          git commit -m "chore: atualizar histórico de postagens [skip ci]" || exit 0
+          git commit -m "chore: atualizar historico de postagens [skip ci]" || exit 0
           git push

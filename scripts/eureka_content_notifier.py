@@ -353,16 +353,15 @@ def get_latest_youtube_videos():
         if len(description) > 280:
             description = description[:277] + "..."
 
-        # Filtro de seguranca: Ignora VODs de lives passadas do Restream e Shorts
+        # Filtro de seguranca: Ignora apenas gravacoes passadas do Restream
         title_lower = title.lower()
         desc_lower = description.lower() if description else ""
         if any(tag in title_lower for tag in ["🔴 ao vivo", "🔴 live", "ao vivo:", "[live]", "restream"]):
             print(f"[Filtro YouTube] Ignorando gravacao de live passada: {title}")
             continue
 
-        if "#shorts" in title_lower or "#shorts" in desc_lower or "/shorts/" in link:
-            print(f"[Filtro YouTube] Ignorando Short: {title}")
-            continue
+        # Identifica se e um Short
+        is_short = "#shorts" in title_lower or "#shorts" in desc_lower or "/shorts/" in link
 
         videos.append({
             "id": video_id,
@@ -371,6 +370,7 @@ def get_latest_youtube_videos():
             "published": published,
             "description": description,
             "thumbnail": thumbnail,
+            "is_short": is_short,
         })
 
     return videos
@@ -382,10 +382,14 @@ def post_youtube_video(video):
     url = video["url"]
     desc = video["description"]
     thumb = video["thumbnail"]
+    is_short = video.get("is_short", False)
 
-    # 1. Postar no Discord
+    content_type_upper = "SHORT" if is_short else "VÍDEO"
+    content_type_lower = "short" if is_short else "vídeo"
+
+    # 1. Postar no Discord (#vídeos)
     discord_payload = {
-        "content": "🎬 **VÍDEO NOVO NO CANAL DO YOUTUBE!** Corre lá pra assistir e deixar o like! 👍",
+        "content": f"🎬 **NOVO {content_type_upper} NO CANAL DO YOUTUBE!** Corre lá pra assistir e deixar o like! 👍",
         "username": "Francis Eureka • YouTube",
         "avatar_url": "https://yt3.googleusercontent.com/zxmqDC1CAxrRE-XNbFG2E5R-d-7nnfu9RXYy18IMsjR4iKGDff47-ZJr-xhdJp-N115Q1iS_jfc=s800-c-k-c0x00ffffff-no-rj",
         "embeds": [
@@ -393,13 +397,13 @@ def post_youtube_video(video):
                 "title": f"▶️ {title}",
                 "url": url,
                 "description": (
-                    f"📖 **Sinopse do vídeo:**\n_{desc}_\n\n"
+                    f"📖 **Sinopse do {content_type_lower}:**\n_{desc}_\n\n"
                     f"Inscreva-se e fortaleça o canal com seu feedback!"
                 ),
                 "color": 16711680,  # Vermelho YouTube #FF0000
                 "fields": [
                     {
-                        "name": "🍿 Assistir no YouTube",
+                        "name": f"🍿 Assistir {content_type_upper} no YouTube",
                         "value": f"[👉 **Clique aqui para assistir**]({url})",
                         "inline": False,
                     }
@@ -418,9 +422,9 @@ def post_youtube_video(video):
     )
     try:
         with urllib.request.urlopen(req, timeout=10):
-            print(f"Vídeo do YouTube publicado no Discord: {title}")
+            print(f"Publicado no Discord ({content_type_upper}): {title}")
     except Exception as e:
-        print(f"Erro ao publicar vídeo no Discord: {e}")
+        print(f"Erro ao publicar no Discord: {e}")
 
     # 2. Postar no WhatsApp (Padoka dos Gamers) - Breve descritivo
     brief_desc = ""
@@ -430,7 +434,7 @@ def post_youtube_video(video):
 
     desc_line = f"\n{brief_desc}\n" if brief_desc else ""
     whatsapp_caption = (
-        f"🎬 Novo vídeo: *{title}*\n"
+        f"🎬 *Novo {content_type_lower} no canal:* *{title}*\n"
         f"{desc_line}\n"
         f"👉 {url}"
     )

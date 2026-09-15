@@ -257,8 +257,36 @@ def send_whatsapp_deal(deal):
     return False
 
 
-def run(max_deals=2):
+def get_hours_since_last_deal(history):
+    if not history:
+        return 999.0
+    latest_dt = None
+    for val in history.values():
+        try:
+            clean_val = str(val).replace("Z", "+00:00")
+            dt = datetime.fromisoformat(clean_val)
+            if latest_dt is None or dt > latest_dt:
+                latest_dt = dt
+        except Exception:
+            pass
+    if latest_dt is None:
+        return 999.0
+    if latest_dt.tzinfo is None:
+        latest_dt = latest_dt.replace(tzinfo=timezone.utc)
+    diff = (datetime.now(timezone.utc) - latest_dt).total_seconds() / 3600.0
+    return diff
+
+
+def run(max_deals=1, min_interval_hours=1.5):
     history = load_history()
+    
+    # Se ja postou recentemente, aguarda o intervalo minimo para evitar flood de ofertas
+    if min_interval_hours > 0:
+        elapsed = get_hours_since_last_deal(history)
+        if elapsed < min_interval_hours:
+            print(f"[Instant Gaming] Ultima oferta postada ha {elapsed:.1f}h. Aguardando intervalo de {min_interval_hours}h.")
+            return
+
     deals = get_daily_deals()
     posted_count = 0
 
