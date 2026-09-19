@@ -35,37 +35,82 @@ def save_history(history):
 
 
 def get_daily_deals():
-    """Busca as melhores ofertas do dia com descontos expressivos."""
-    url = "https://store.steampowered.com/api/featuredcategories/?cc=br&l=brazilian"
-    req = urllib.request.Request(
-        url,
-        headers={
-            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
-        },
-    )
-    with urllib.request.urlopen(req, timeout=15) as res:
-        data = json.loads(res.read().decode("utf-8"))
-
-    items = data.get("specials", {}).get("items", [])
+    """Busca as melhores ofertas do dia na Steam (Specials e Top Sellers) e no CheapShark."""
     deals = []
+    seen_ids = set()
 
-    for item in items:
-        name = item.get("name", "")
-        discount = item.get("discount_percent", 0)
-        final_price = item.get("final_price", 0) / 100.0
-        orig_price = item.get("original_price", 0) / 100.0
-        header_image = item.get("header_image", "")
-        item_id = str(item.get("id", name))
+    # 1. API Oficial da Steam (Specials e Top Sellers com desconto)
+    try:
+        url = "https://store.steampowered.com/api/featuredcategories/?cc=br&l=brazilian"
+        req = urllib.request.Request(
+            url,
+            headers={
+                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
+            },
+        )
+        with urllib.request.urlopen(req, timeout=15) as res:
+            data = json.loads(res.read().decode("utf-8"))
 
-        if discount >= 20 and final_price > 0:
-            deals.append({
-                "id": item_id,
-                "name": name,
-                "discount": discount,
-                "final_price": final_price,
-                "orig_price": orig_price,
-                "image": header_image,
-            })
+        candidate_items = []
+        if "specials" in data and "items" in data["specials"]:
+            candidate_items.extend(data["specials"]["items"])
+        if "top_sellers" in data and "items" in data["top_sellers"]:
+            candidate_items.extend(data["top_sellers"]["items"])
+
+        for item in candidate_items:
+            name = item.get("name", "").strip()
+            discount = item.get("discount_percent", 0)
+            final_price = item.get("final_price", 0) / 100.0
+            orig_price = item.get("original_price", 0) / 100.0
+            header_image = item.get("header_image", "")
+            item_id = str(item.get("id", name))
+
+            if discount >= 20 and final_price > 0 and item_id not in seen_ids:
+                seen_ids.add(item_id)
+                deals.append({
+                    "id": item_id,
+                    "name": name,
+                    "discount": discount,
+                    "final_price": final_price,
+                    "orig_price": orig_price,
+                    "image": header_image,
+                })
+    except Exception as e:
+        print(f"Aviso ao buscar ofertas da Steam: {e}")
+
+    # 2. Complemento / Fallback: CheapShark API (Grandes descontos da Steam)
+    if len(deals) < 15:
+        try:
+            cs_url = "https://www.cheapshark.com/api/1.0/deals?storeID=1&pageSize=30&onSale=1&sortBy=Deal%20Rating"
+            cs_req = urllib.request.Request(
+                cs_url,
+                headers={
+                    "User-Agent": "EurekaBot/1.0 (contact@franciseureka.com)"
+                },
+            )
+            with urllib.request.urlopen(cs_req, timeout=15) as cs_res:
+                cs_data = json.loads(cs_res.read().decode("utf-8"))
+                for cs_item in cs_data:
+                    app_id = str(cs_item.get("steamAppID", ""))
+                    if not app_id or app_id in seen_ids:
+                        continue
+                    savings = float(cs_item.get("savings", 0))
+                    sale_price = float(cs_item.get("salePrice", 0))
+                    normal_price = float(cs_item.get("normalPrice", 0))
+                    title = cs_item.get("title", "").strip()
+
+                    if savings >= 30 and sale_price > 0 and title:
+                        seen_ids.add(app_id)
+                        deals.append({
+                            "id": app_id,
+                            "name": title,
+                            "discount": int(round(savings)),
+                            "final_price": round(sale_price * 5.40, 2),
+                            "orig_price": round(normal_price * 5.40, 2),
+                            "image": f"https://shared.fastly.steamstatic.com/store_item_assets/steam/apps/{app_id}/header.jpg",
+                        })
+        except Exception as e:
+            print(f"Aviso ao buscar ofertas complementares no CheapShark: {e}")
 
     # Ordena pelos maiores descontos
     deals.sort(key=lambda x: x["discount"], reverse=True)
@@ -277,6 +322,22 @@ def get_hours_since_last_deal(history):
     return diff
 
 
+def is_deal_recent(deal_id, history, max_age_days=3):
+    """Retorna True se o deal já foi postado recentemente (menos de max_age_days dias atrás)."""
+    if deal_id not in history:
+        return False
+    try:
+        val = history[deal_id]
+        clean_val = str(val).replace("Z", "+00:00")
+        dt = datetime.fromisoformat(clean_val)
+        if dt.tzinfo is None:
+            dt = dt.replace(tzinfo=timezone.utc)
+        age_days = (datetime.now(timezone.utc) - dt).total_seconds() / 86400.0
+        return age_days < max_age_days
+    except Exception:
+        return True
+
+
 def run(max_deals=1, min_interval_hours=1.5):
     history = load_history()
     
@@ -291,7 +352,7 @@ def run(max_deals=1, min_interval_hours=1.5):
     posted_count = 0
 
     for deal in deals:
-        if deal["id"] in history:
+        if is_deal_recent(deal["id"], history, max_age_days=3):
             continue
 
         details = get_game_details(deal["id"])
