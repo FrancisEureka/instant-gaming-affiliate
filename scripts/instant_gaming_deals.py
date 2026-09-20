@@ -14,6 +14,71 @@ from datetime import datetime, timezone
 WEBHOOK_URL = "https://discord.com/api/webhooks/1547214145227587624/EPx13UxO5Z90JeW6528MLOliJbbBNJiHjEd7BvQf8up8AiIouRMQiREMYhcUFzoYOtkX"
 AFFILIATE_TAG = "franciseureka"
 HISTORY_FILE = os.path.join(os.path.dirname(__file__), "posted_deals_history.json")
+LAST_STORE_FILE = os.path.join(os.path.dirname(__file__), "posted_last_store.json")
+
+HUMBLE_AFFILIATE_BASE = "https://humblebundleinc.sjv.io/c/7758631/2059850/25796"
+FANATICAL_AFFILIATE_BASE = "https://www.awin1.com/cread.php?awinmid=118821&awinaffid=3091639&ued="
+
+STORE_CONFIG = {
+    "instant_gaming": {
+        "name": "Instant Gaming",
+        "tag_name": "INSTANT GAMING",
+        "color": 16744192,  # Laranja Instant Gaming #FF7F00
+        "avatar_url": "https://gaming-cdn.com/images/favicon/favicon.png",
+        "badge_title": "OFERTA DO DIA NA INSTANT GAMING!",
+        "footer_text": "Eureka Gaming • Chave Steam Ativável • Cupom: ?igr=franciseureka",
+        "call_to_action_discord": "Clique aqui para garantir na Instant Gaming",
+        "call_to_action_wa": "Garanta o seu jogo pelo link de parceiro da Instant Gaming:",
+        "footer_wa": "Ativação imediata • Comunidade Eureka",
+    },
+    "humble_store": {
+        "name": "Humble Store",
+        "tag_name": "HUMBLE STORE",
+        "color": 13313831,  # Vermelho Humble #CB2727
+        "avatar_url": "https://cdn.iconscout.com/icon/free/png-512/free-humble-bundle-3628817-3030063.png",
+        "badge_title": "OFERTA DO DIA NA HUMBLE STORE!",
+        "footer_text": "Eureka Gaming • Parceiro Oficial Humble Bundle • Chave Steam",
+        "call_to_action_discord": "Clique aqui para garantir na Humble Store",
+        "call_to_action_wa": "Garanta o seu jogo pelo link de parceiro da Humble Store:",
+        "footer_wa": "Ativação oficial Steam • Apoie a Comunidade Eureka",
+    },
+    "fanatical": {
+        "name": "Fanatical",
+        "tag_name": "FANATICAL",
+        "color": 16738560,  # Laranja/Dourado Fanatical #FF6B00
+        "avatar_url": "https://cdn.iconscout.com/icon/free/png-512/free-fanatical-3628766-3030012.png",
+        "badge_title": "OFERTA DO DIA NA FANATICAL!",
+        "footer_text": "Eureka Gaming • Parceiro Oficial Fanatical • Chave Steam",
+        "call_to_action_discord": "Clique aqui para garantir na Fanatical",
+        "call_to_action_wa": "Garanta o seu jogo pelo link de parceiro da Fanatical:",
+        "footer_wa": "Ativação oficial Steam • Apoie a Comunidade Eureka",
+    },
+}
+
+STORES_CYCLE = ["instant_gaming", "humble_store", "fanatical"]
+
+
+def get_next_store():
+    """Alterna ciclicamente entre Instant Gaming, Humble Store e Fanatical a cada postagem."""
+    if os.path.exists(LAST_STORE_FILE):
+        try:
+            with open(LAST_STORE_FILE, "r", encoding="utf-8") as f:
+                data = json.load(f)
+                last = data.get("last_store", "").lower()
+                if last in STORES_CYCLE:
+                    idx = STORES_CYCLE.index(last)
+                    return STORES_CYCLE[(idx + 1) % len(STORES_CYCLE)]
+        except Exception:
+            pass
+    return "fanatical"  # Inicia com Fanatical para inaugurar a nova parceria!
+
+
+def save_last_store(store_name):
+    try:
+        with open(LAST_STORE_FILE, "w", encoding="utf-8") as f:
+            json.dump({"last_store": store_name, "updated_at": datetime.now(timezone.utc).isoformat()}, f, indent=2)
+    except Exception as e:
+        print(f"Aviso ao salvar última loja: {e}")
 
 
 def load_history():
@@ -117,9 +182,16 @@ def get_daily_deals():
     return deals
 
 
-def build_affiliate_url(game_name):
-    query = urllib.parse.quote_plus(game_name)
-    return f"https://www.instant-gaming.com/pt/procurar/?q={query}&igr={AFFILIATE_TAG}"
+def build_affiliate_url(game_name, store="instant_gaming"):
+    if store == "fanatical":
+        target = f"https://www.fanatical.com/pt/search?search={urllib.parse.quote_plus(game_name)}"
+        return f"{FANATICAL_AFFILIATE_BASE}{urllib.parse.quote(target, safe='')}"
+    elif store == "humble_store":
+        target = f"https://www.humblebundle.com/store/search?sort=bestselling&search={urllib.parse.quote_plus(game_name)}"
+        return f"{HUMBLE_AFFILIATE_BASE}?u={urllib.parse.quote(target, safe='')}"
+    else:
+        query = urllib.parse.quote_plus(game_name)
+        return f"https://www.instant-gaming.com/pt/procurar/?q={query}&igr={AFFILIATE_TAG}"
 
 
 def get_game_details(app_id):
@@ -347,7 +419,7 @@ def run(max_deals=1, min_interval_hours=1.5):
     if min_interval_hours > 0:
         elapsed = get_hours_since_last_deal(history)
         if elapsed < min_interval_hours:
-            print(f"[Instant Gaming & Humble] Ultima oferta postada ha {elapsed:.1f}h. Aguardando intervalo de {min_interval_hours}h.")
+            print(f"[Ofertas] Ultima oferta postada ha {elapsed:.1f}h. Aguardando intervalo de {min_interval_hours}h.")
             return
 
     # Determina a loja desta rodada (rotacao alternada entre Instant Gaming e Humble Store)
