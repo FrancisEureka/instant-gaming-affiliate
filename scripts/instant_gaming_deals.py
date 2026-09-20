@@ -18,6 +18,7 @@ LAST_STORE_FILE = os.path.join(os.path.dirname(__file__), "posted_last_store.jso
 
 HUMBLE_AFFILIATE_BASE = "https://humblebundleinc.sjv.io/c/7758631/2059850/25796"
 FANATICAL_AFFILIATE_BASE = "https://www.awin1.com/cread.php?awinmid=118821&awinaffid=3091639&ued="
+G2A_AFFILIATE_LINK = "https://www.g2a.com/n/reflink-e9ca0b6c48"
 
 STORE_CONFIG = {
     "instant_gaming": {
@@ -64,13 +65,24 @@ STORE_CONFIG = {
         "call_to_action_wa": "Garanta o seu jogo pelo link de parceiro da Eneba:",
         "footer_wa": "Ativação oficial Steam • Apoie a Comunidade Eureka",
     },
+    "g2a": {
+        "name": "G2A",
+        "tag_name": "G2A",
+        "color": 15751720,  # Vermelho/Laranja G2A #F05A28
+        "avatar_url": "https://cdn.iconscout.com/icon/free/png-512/free-g2a-3628768-3030014.png",
+        "badge_title": "OFERTA DO DIA NA G2A!",
+        "footer_text": "Eureka Gaming • Parceiro Oficial G2A • Chave Steam",
+        "call_to_action_discord": "Clique aqui para garantir na G2A",
+        "call_to_action_wa": "Garanta o seu jogo pelo link de parceiro da G2A:",
+        "footer_wa": "Ativação oficial Steam • Apoie a Comunidade Eureka",
+    },
 }
 
-STORES_CYCLE = ["instant_gaming", "humble_store", "fanatical", "eneba"]
+STORES_CYCLE = ["instant_gaming", "humble_store", "fanatical", "eneba", "g2a"]
 
 
 def get_next_store():
-    """Alterna ciclicamente entre Instant Gaming, Humble Store, Fanatical e Eneba a cada postagem."""
+    """Alterna ciclicamente entre Instant Gaming, Humble Store, Fanatical, Eneba e G2A a cada postagem."""
     if os.path.exists(LAST_STORE_FILE):
         try:
             with open(LAST_STORE_FILE, "r", encoding="utf-8") as f:
@@ -81,7 +93,7 @@ def get_next_store():
                     return STORES_CYCLE[(idx + 1) % len(STORES_CYCLE)]
         except Exception:
             pass
-    return "eneba"  # Inicia com Eneba para inaugurar a nova parceria!
+    return "g2a"  # Inicia com G2A para inaugurar a nova parceria!
 
 
 def save_last_store(store_name):
@@ -194,7 +206,9 @@ def get_daily_deals():
 
 
 def build_affiliate_url(game_name, store="instant_gaming"):
-    if store == "eneba":
+    if store == "g2a":
+        return G2A_AFFILIATE_LINK
+    elif store == "eneba":
         query = urllib.parse.quote_plus(game_name)
         return f"https://www.eneba.com/store/all?text={query}&af_id=FrancisEureka01&utm_medium=af&utm_source=FrancisEureka01"
     elif store == "fanatical":
@@ -436,7 +450,7 @@ def run(max_deals=1, min_interval_hours=1.5):
             print(f"[Ofertas] Ultima oferta postada ha {elapsed:.1f}h. Aguardando intervalo de {min_interval_hours}h.")
             return
 
-    # Determina a loja desta rodada (rotacao alternada entre Instant Gaming, Humble Store, Fanatical e Eneba)
+    # Determina a loja desta rodada (rotacao alternada entre Instant Gaming, Humble Store, Fanatical, Eneba e G2A)
     store = get_next_store()
     print(f"[Ofertas] Loja selecionada para esta postagem: {store.upper()}")
 
