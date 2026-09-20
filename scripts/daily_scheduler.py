@@ -100,6 +100,14 @@ def check_and_post_deals_slots():
     except Exception as e:
         print(f"Erro ao rodar free_games_deals: {e}")
 
+    # 3. Catálogo Web do Portal Eureka Gaming
+    try:
+        print("\n--- Atualizando Catálogo Web Eureka Gaming ---")
+        import update_web_deals
+        update_web_deals.main()
+    except Exception as e:
+        print(f"Erro ao atualizar catálogo web: {e}")
+
     # Salva slot como concluído
     history[slot] = brt.isoformat()
     save_slots_history(history)

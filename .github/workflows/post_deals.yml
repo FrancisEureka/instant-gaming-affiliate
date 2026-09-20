@@ -12,7 +12,7 @@ jobs:
   post-deals:
     runs-on: ubuntu-latest
     permissions:
-      contents: write # Permite salvar o histórico de ofertas postadas
+      contents: write # Permite salvar o histórico de ofertas e catálogo web
 
     steps:
       - name: Checkout repositório
@@ -28,7 +28,7 @@ jobs:
           echo "Acordando Evolution API no Render..."
           curl -s -m 45 https://eureka-evolution.onrender.com/ || true
 
-      - name: Executar bot de ofertas e jogos grátis
+      - name: Executar bot de ofertas, jogos grátis e catálogo web
         env:
           WHATSAPP_API_URL: ${{ secrets.WHATSAPP_API_URL || 'https://eureka-evolution.onrender.com' }}
           WHATSAPP_API_KEY: ${{ secrets.WHATSAPP_API_KEY || 'A829A3AB4468-4731-9173-1A15C8361FCB' }}
@@ -38,11 +38,12 @@ jobs:
         run: |
           python scripts/instant_gaming_deals.py
           python scripts/free_games_deals.py
+          python scripts/update_web_deals.py
 
-      - name: Salvar histórico de postagens
+      - name: Salvar histórico e catálogo do site
         run: |
           git config --global user.name "Eureka Deals Bot"
           git config --global user.email "bot@franciseureka.com"
-          git add scripts/posted_deals_history.json scripts/posted_free_games_history.json scripts/posted_last_store.json
-          git commit -m "chore: atualizar histórico de ofertas e jogos grátis [skip ci]" || exit 0
+          git add scripts/posted_deals_history.json scripts/posted_free_games_history.json scripts/posted_last_store.json public/data/deals.json
+          git commit -m "chore: atualizar ofertas, jogos grátis e catálogo web [skip ci]" || exit 0
           git push
