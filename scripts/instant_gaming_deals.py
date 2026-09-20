@@ -53,13 +53,24 @@ STORE_CONFIG = {
         "call_to_action_wa": "Garanta o seu jogo pelo link de parceiro da Fanatical:",
         "footer_wa": "Ativação oficial Steam • Apoie a Comunidade Eureka",
     },
+    "eneba": {
+        "name": "Eneba",
+        "tag_name": "ENEBA",
+        "color": 5182702,  # Roxo Eneba #4F14EE
+        "avatar_url": "https://cdn.iconscout.com/icon/free/png-512/free-eneba-3628761-3030007.png",
+        "badge_title": "OFERTA DO DIA NA ENEBA!",
+        "footer_text": "Eureka Gaming • Parceiro Oficial Eneba • Chave Steam",
+        "call_to_action_discord": "Clique aqui para garantir na Eneba",
+        "call_to_action_wa": "Garanta o seu jogo pelo link de parceiro da Eneba:",
+        "footer_wa": "Ativação oficial Steam • Apoie a Comunidade Eureka",
+    },
 }
 
-STORES_CYCLE = ["instant_gaming", "humble_store", "fanatical"]
+STORES_CYCLE = ["instant_gaming", "humble_store", "fanatical", "eneba"]
 
 
 def get_next_store():
-    """Alterna ciclicamente entre Instant Gaming, Humble Store e Fanatical a cada postagem."""
+    """Alterna ciclicamente entre Instant Gaming, Humble Store, Fanatical e Eneba a cada postagem."""
     if os.path.exists(LAST_STORE_FILE):
         try:
             with open(LAST_STORE_FILE, "r", encoding="utf-8") as f:
@@ -70,7 +81,7 @@ def get_next_store():
                     return STORES_CYCLE[(idx + 1) % len(STORES_CYCLE)]
         except Exception:
             pass
-    return "fanatical"  # Inicia com Fanatical para inaugurar a nova parceria!
+    return "eneba"  # Inicia com Eneba para inaugurar a nova parceria!
 
 
 def save_last_store(store_name):
@@ -183,7 +194,10 @@ def get_daily_deals():
 
 
 def build_affiliate_url(game_name, store="instant_gaming"):
-    if store == "fanatical":
+    if store == "eneba":
+        query = urllib.parse.quote_plus(game_name)
+        return f"https://www.eneba.com/store/all?text={query}&af_id=FrancisEureka01&utm_medium=af&utm_source=FrancisEureka01"
+    elif store == "fanatical":
         target = f"https://www.fanatical.com/pt/search?search={urllib.parse.quote_plus(game_name)}"
         return f"{FANATICAL_AFFILIATE_BASE}{urllib.parse.quote(target, safe='')}"
     elif store == "humble_store":
@@ -422,7 +436,7 @@ def run(max_deals=1, min_interval_hours=1.5):
             print(f"[Ofertas] Ultima oferta postada ha {elapsed:.1f}h. Aguardando intervalo de {min_interval_hours}h.")
             return
 
-    # Determina a loja desta rodada (rotacao alternada entre Instant Gaming e Humble Store)
+    # Determina a loja desta rodada (rotacao alternada entre Instant Gaming, Humble Store, Fanatical e Eneba)
     store = get_next_store()
     print(f"[Ofertas] Loja selecionada para esta postagem: {store.upper()}")
 
