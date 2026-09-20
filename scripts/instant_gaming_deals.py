@@ -149,12 +149,13 @@ def get_game_details(app_id):
     return {"description": "", "genres": ""}
 
 
-def post_deal(deal):
+def post_deal(deal, store="instant_gaming"):
+    cfg = STORE_CONFIG.get(store, STORE_CONFIG["instant_gaming"])
     name = deal["name"]
     discount = deal["discount"]
     price = f"R$ {deal['final_price']:.2f}".replace(".", ",")
     orig_price = f"R$ {deal['orig_price']:.2f}".replace(".", ",")
-    affiliate_link = build_affiliate_url(name)
+    affiliate_link = build_affiliate_url(name, store=store)
     desc_text = deal.get("description", "")
     genres = deal.get("genres", "")
 
@@ -166,7 +167,7 @@ def post_deal(deal):
         },
         {
             "name": "💰 De / Por",
-            "value": f"~~{orig_price}~~ ➡️ **{price}**",
+            "value": f"~~{orig_price}~~ ➔ **{price}**",
             "inline": True,
         },
         {
@@ -192,17 +193,17 @@ def post_deal(deal):
 
     fields.append({
         "name": "🛒 Comprar Agora",
-        "value": f"[👉 **Clique aqui para garantir com desconto**]({affiliate_link})",
+        "value": f"[👉 **{cfg['call_to_action_discord']}**]({affiliate_link})",
         "inline": False,
     })
 
     payload = {
-        "username": "Eureka Ofertas",
-        "avatar_url": "https://gaming-cdn.com/images/favicon/favicon.png",
+        "username": f"Eureka Ofertas [{cfg['tag_name']}]",
+        "avatar_url": cfg["avatar_url"],
         "embeds": [
             {
                 "author": {
-                    "name": "INSTANT GAMING • CHAVE DIGITAL (STEAM / PC) 🎮",
+                    "name": f"{cfg['tag_name']} • CHAVE DIGITAL (STEAM / PC) 🎮",
                     "icon_url": "https://cdn.jsdelivr.net/gh/walkxcode/dashboard-icons/png/steam.png",
                     "url": affiliate_link,
                 },
@@ -212,15 +213,15 @@ def post_deal(deal):
                 "title": f"🔥 [STEAM] {name} com -{discount}% de Desconto!",
                 "url": affiliate_link,
                 "description": (
-                    f"⚡ **Super Oferta na Instant Gaming!**\n"
-                    f"Chave digital para ativação na **Steam** com preço reduzido.\n"
+                    f"⚡ **{cfg['badge_title']}**\n"
+                    f"Chave digital oficial para ativação na **Steam** com preço reduzido.\n"
                     f"Ao comprar pelo link, você apoia diretamente a comunidade do Eureka sem pagar nada a mais por isso!"
                 ),
-                "color": 16744192,  # Laranja Instant Gaming #FF7F00
+                "color": cfg["color"],
                 "fields": fields,
                 "image": {"url": deal["image"]},
                 "footer": {
-                    "text": "Eureka Gaming • Chave Steam Ativável • Cupom: ?igr=franciseureka",
+                    "text": cfg["footer_text"],
                     "icon_url": "https://cdn.jsdelivr.net/gh/walkxcode/dashboard-icons/png/steam.png",
                 },
                 "timestamp": datetime.now(timezone.utc).isoformat(),
@@ -240,7 +241,7 @@ def post_deal(deal):
         return res.status in (200, 204)
 
 
-def send_whatsapp_deal(deal):
+def send_whatsapp_deal(deal, store="instant_gaming"):
     """Envia a oferta para o grupo do WhatsApp caso as variáveis de ambiente estejam configuradas."""
     api_url = (os.environ.get("WHATSAPP_API_URL") or "https://eureka-evolution.onrender.com").rstrip("/")
     api_key = os.environ.get("WHATSAPP_API_KEY") or "A829A3AB4468-4731-9173-1A15C8361FCB"
@@ -250,25 +251,26 @@ def send_whatsapp_deal(deal):
     if not api_url or not api_key:
         return False
 
+    cfg = STORE_CONFIG.get(store, STORE_CONFIG["instant_gaming"])
     name = deal["name"]
     discount = deal["discount"]
     price = f"R$ {deal['final_price']:.2f}".replace(".", ",")
     orig_price = f"R$ {deal['orig_price']:.2f}".replace(".", ",")
-    affiliate_link = build_affiliate_url(name)
+    affiliate_link = build_affiliate_url(name, store=store)
     desc_section = f"\n📖 *Sobre o jogo:*\n_{deal['description']}_\n" if deal.get("description") else ""
     genres_line = f"🏷️ Gêneros: {deal['genres']}\n" if deal.get("genres") else ""
 
     caption = (
         f"🏷️ *PLATAFORMA:* *【 STEAM / PC DIGITAL 】*\n"
-        f"🔥 *OFERTA DO DIA NA INSTANT GAMING!*\n\n"
+        f"🔥 *{cfg['badge_title']}*\n\n"
         f"🕹️ *{name}* com *-{discount}% de Desconto!*\n"
         f"💰 De: ~{orig_price}~ por APENAS *{price}*\n"
         f"🔑 Plataforma: Steam / PC Digital\n"
         f"{genres_line}"
         f"{desc_section}\n"
-        f"🛒 *Garanta o seu jogo com desconto pelo link de parceiro:*\n"
+        f"🛒 *{cfg['call_to_action_wa']}*\n"
         f"👉 {affiliate_link}\n\n"
-        f"⚡ _Ativação imediata • Comunidade Eureka_"
+        f"⚡ _{cfg['footer_wa']}_"
     )
 
     # Endpoint padrão da Evolution API / gateways compatíveis
@@ -345,8 +347,12 @@ def run(max_deals=1, min_interval_hours=1.5):
     if min_interval_hours > 0:
         elapsed = get_hours_since_last_deal(history)
         if elapsed < min_interval_hours:
-            print(f"[Instant Gaming] Ultima oferta postada ha {elapsed:.1f}h. Aguardando intervalo de {min_interval_hours}h.")
+            print(f"[Instant Gaming & Humble] Ultima oferta postada ha {elapsed:.1f}h. Aguardando intervalo de {min_interval_hours}h.")
             return
+
+    # Determina a loja desta rodada (rotacao alternada entre Instant Gaming e Humble Store)
+    store = get_next_store()
+    print(f"[Ofertas] Loja selecionada para esta postagem: {store.upper()}")
 
     deals = get_daily_deals()
     posted_count = 0
@@ -359,12 +365,13 @@ def run(max_deals=1, min_interval_hours=1.5):
         deal["description"] = details["description"]
         deal["genres"] = details["genres"]
 
-        print(f"Postando oferta: {deal['name']} (-{deal['discount']}%)")
-        discord_ok = post_deal(deal)
-        whatsapp_ok = send_whatsapp_deal(deal)
+        print(f"Postando oferta na {store.upper()}: {deal['name']} (-{deal['discount']}%)")
+        discord_ok = post_deal(deal, store=store)
+        whatsapp_ok = send_whatsapp_deal(deal, store=store)
 
         if discord_ok or whatsapp_ok:
             history[deal["id"]] = datetime.now(timezone.utc).isoformat()
+            save_last_store(store)
             posted_count += 1
             if posted_count >= max_deals:
                 break
