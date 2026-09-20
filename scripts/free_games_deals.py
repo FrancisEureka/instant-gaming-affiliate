@@ -169,6 +169,21 @@ def get_platform_branding(store_name):
     }
 
 
+def translate_to_pt(text):
+    """Garante que a sinopse e textos sobre o jogo estejam sempre em Português do Brasil."""
+    if not text or not text.strip():
+        return ""
+    try:
+        url = "https://translate.googleapis.com/translate_a/single?client=gtx&sl=auto&tl=pt&dt=t&q=" + urllib.parse.quote(text)
+        req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0"})
+        with urllib.request.urlopen(req, timeout=6) as res:
+            data = json.loads(res.read().decode("utf-8"))
+            return "".join([part[0] for part in data[0] if part[0]]).strip()
+    except Exception as e:
+        print(f"Aviso ao traduzir texto para português: {e}")
+        return text
+
+
 def post_free_game(game):
     info = clean_game_data(game)
     title = info["title"]
@@ -184,10 +199,12 @@ def post_free_game(game):
     plat_icon = branding["icon"]
     plat_color = branding["color"]
 
+    if description:
+        description = translate_to_pt(description)
     if len(description) > 280:
         description = description[:277] + "..."
 
-    worth_text = f"~~{worth}~~ ➔ **GRÁTIS (100% OFF)**" if worth != "N/A" else "**100% GRÁTIS**"
+    worth_text = f"~~{worth}~~\n➔ **GRÁTIS (100% OFF)**" if worth != "N/A" else "**100% GRÁTIS**"
 
     embed = {
         "author": {
@@ -265,6 +282,8 @@ def send_whatsapp_free_game(game):
     worth = game.get("worth", "N/A")
     giveaway_url = game.get("open_giveaway_url", "")
     description = game.get("description", "").strip()
+    if description:
+        description = translate_to_pt(description)
     if len(description) > 280:
         description = description[:277] + "..."
     worth_text = f"~{worth}~ ➡️ *GRÁTIS (100% OFF)*" if worth != "N/A" else "*100% GRÁTIS*"

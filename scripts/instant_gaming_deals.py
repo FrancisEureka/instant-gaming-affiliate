@@ -222,8 +222,23 @@ def build_affiliate_url(game_name, store="instant_gaming"):
         return f"https://www.instant-gaming.com/pt/procurar/?q={query}&igr={AFFILIATE_TAG}"
 
 
+def translate_to_pt(text):
+    """Garante que a sinopse e textos sobre o jogo estejam sempre em Português do Brasil."""
+    if not text or not text.strip():
+        return ""
+    try:
+        url = "https://translate.googleapis.com/translate_a/single?client=gtx&sl=auto&tl=pt&dt=t&q=" + urllib.parse.quote(text)
+        req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0"})
+        with urllib.request.urlopen(req, timeout=6) as res:
+            data = json.loads(res.read().decode("utf-8"))
+            return "".join([part[0] for part in data[0] if part[0]]).strip()
+    except Exception as e:
+        print(f"Aviso ao traduzir texto para português: {e}")
+        return text
+
+
 def get_game_details(app_id):
-    """Busca sinopse em português e gêneros na API oficial da Steam."""
+    """Busca sinopse em português e gêneros na API oficial da Steam, garantindo tradução se necessário."""
     try:
         url = f"https://store.steampowered.com/api/appdetails?appids={app_id}&l=brazilian"
         req = urllib.request.Request(
@@ -236,13 +251,17 @@ def get_game_details(app_id):
             data = json.loads(res.read().decode("utf-8"))
             app_data = data.get(str(app_id), {}).get("data", {})
             desc = app_data.get("short_description", "").strip()
-            # Limita descrição se for muito longa
+            if desc:
+                desc = translate_to_pt(desc)
             if len(desc) > 300:
                 desc = desc[:297] + "..."
             genres = [g.get("description", "") for g in app_data.get("genres", []) if g.get("description")]
+            genres_str = ", ".join(genres[:3]) if genres else ""
+            if genres_str:
+                genres_str = translate_to_pt(genres_str)
             return {
                 "description": desc,
-                "genres": ", ".join(genres[:3]) if genres else "",
+                "genres": genres_str,
             }
     except Exception as e:
         print(f"Aviso ao buscar detalhes de {app_id}: {e}")
@@ -253,8 +272,9 @@ def post_deal(deal, store="instant_gaming"):
     cfg = STORE_CONFIG.get(store, STORE_CONFIG["instant_gaming"])
     name = deal["name"]
     discount = deal["discount"]
-    price = f"R$ {deal['final_price']:.2f}".replace(".", ",")
-    orig_price = f"R$ {deal['orig_price']:.2f}".replace(".", ",")
+    # Usa espaço não-quebrável ( ) para impedir que R$ e valor quebrem de linha
+    price = f"R$\u00a0{deal['final_price']:.2f}".replace(".", ",")
+    orig_price = f"R$\u00a0{deal['orig_price']:.2f}".replace(".", ",")
     affiliate_link = build_affiliate_url(name, store=store)
     desc_text = deal.get("description", "")
     genres = deal.get("genres", "")
@@ -262,12 +282,12 @@ def post_deal(deal, store="instant_gaming"):
     fields = [
         {
             "name": "🏷️ Desconto",
-            "value": f"`-{discount}%`",
+            "value": f"` -{discount}% `",
             "inline": True,
         },
         {
             "name": "💰 De / Por",
-            "value": f"~~{orig_price}~~ ➔ **{price}**",
+            "value": f"~~{orig_price}~~\n➔ **{price}**",
             "inline": True,
         },
         {
@@ -281,7 +301,7 @@ def post_deal(deal, store="instant_gaming"):
         fields.append({
             "name": "🎮 Gêneros",
             "value": genres,
-            "inline": True,
+            "inline": False,
         })
 
     if desc_text:
