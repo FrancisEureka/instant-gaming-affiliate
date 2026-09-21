@@ -11,6 +11,7 @@ interface SidebarProps {
   onCloseMobile: () => void
   totalDeals: number
   totalFree: number
+  storeCounts?: Record<string, number>
 }
 
 const STORES = [
@@ -80,25 +81,26 @@ export default function Sidebar({
   onCloseMobile,
   totalDeals,
   totalFree,
+  storeCounts = {},
 }: SidebarProps) {
   const content = (
     <div className="flex flex-col h-full text-slate-200">
       {/* Brand & Profile Header */}
-      <div className="flex flex-col items-center pb-6 border-b border-slate-800">
+      <div className="flex flex-col items-center pb-6 border-b border-slate-800/80">
         <div className="relative group mb-3">
           <div className="absolute -inset-1 rounded-full bg-gradient-to-r from-emerald-500 via-cyan-500 to-indigo-500 opacity-75 blur-md group-hover:opacity-100 transition duration-300"></div>
           <div className="relative w-20 h-20 rounded-full bg-slate-900 border-2 border-emerald-400 overflow-hidden flex items-center justify-center shadow-xl">
             <img
               src="https://gaming-cdn.com/images/favicon/favicon.png"
-              alt="Eureka Gaming"
+              alt="Logo Eureka Gaming"
               className="w-14 h-14 object-contain"
             />
           </div>
         </div>
-        <h1 className="text-xl font-extrabold tracking-tight text-white flex items-center gap-1.5">
+        <h2 className="text-xl font-extrabold tracking-tight text-white flex items-center gap-1.5">
           Eureka Gaming
           <span className="inline-block w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
-        </h1>
+        </h2>
         <p className="text-xs text-slate-400 mt-0.5 text-center font-medium">
           As Melhores Promoções & Jogos Grátis
         </p>
@@ -110,10 +112,10 @@ export default function Sidebar({
       </div>
 
       {/* Social Links */}
-      <div className="py-4 border-b border-slate-800">
-        <h2 className="text-[11px] uppercase tracking-wider font-bold text-slate-400 px-2 mb-2">
+      <nav aria-label="Redes Sociais da Comunidade" className="py-4 border-b border-slate-800/80">
+        <h3 className="text-[11px] uppercase tracking-wider font-bold text-slate-400 px-2 mb-2">
           Comunidade & Redes
-        </h2>
+        </h3>
         <div className="space-y-1">
           {SOCIAL_LINKS.map((link) => (
             <a
@@ -128,14 +130,14 @@ export default function Sidebar({
             </a>
           ))}
         </div>
-      </div>
+      </nav>
 
       {/* Filters by Store */}
-      <div className="py-4 border-b border-slate-800 flex-1">
+      <div className="py-4 border-b border-slate-800/80 flex-1">
         <div className="flex items-center justify-between px-2 mb-2">
-          <h2 className="text-[11px] uppercase tracking-wider font-bold text-slate-400">
+          <h3 className="text-[11px] uppercase tracking-wider font-bold text-slate-400">
             Lojas Parceiras
-          </h2>
+          </h3>
           {selectedStores.length > 0 && (
             <button
               onClick={() => onToggleStore("CLEAR_ALL")}
@@ -148,6 +150,7 @@ export default function Sidebar({
         <div className="space-y-1.5">
           {STORES.map((s) => {
             const isChecked = selectedStores.includes(s.id)
+            const count = storeCounts[s.id] || 0
             return (
               <label
                 key={s.id}
@@ -159,12 +162,19 @@ export default function Sidebar({
                     {s.name}
                   </span>
                 </div>
-                <input
-                  type="checkbox"
-                  checked={isChecked}
-                  onChange={() => onToggleStore(s.id)}
-                  className="w-4 h-4 rounded bg-slate-900 border-slate-700 text-emerald-500 focus:ring-emerald-500 focus:ring-offset-slate-950 cursor-pointer accent-emerald-500"
-                />
+                <div className="flex items-center gap-2">
+                  {count > 0 && (
+                    <span className="text-[10px] text-slate-400 font-medium px-1.5 py-0.5 rounded bg-slate-900/80 border border-slate-800">
+                      {count}
+                    </span>
+                  )}
+                  <input
+                    type="checkbox"
+                    checked={isChecked}
+                    onChange={() => onToggleStore(s.id)}
+                    className="w-4 h-4 rounded bg-slate-900 border-slate-700 text-emerald-500 focus:ring-emerald-500 focus:ring-offset-slate-950 cursor-pointer accent-emerald-500"
+                  />
+                </div>
               </label>
             )
           })}
@@ -173,9 +183,9 @@ export default function Sidebar({
 
       {/* Filters by Price */}
       <div className="py-4">
-        <h2 className="text-[11px] uppercase tracking-wider font-bold text-slate-400 px-2 mb-2">
+        <h3 className="text-[11px] uppercase tracking-wider font-bold text-slate-400 px-2 mb-2">
           Faixa de Preço
-        </h2>
+        </h3>
         <div className="space-y-1">
           {PRICE_FILTERS.map((f) => {
             const isActive = selectedPriceFilter === f.id
@@ -207,7 +217,7 @@ export default function Sidebar({
   return (
     <>
       {/* Desktop Sidebar (Fixed Left) */}
-      <aside className="hidden lg:flex lg:flex-col lg:fixed lg:inset-y-0 lg:w-64 bg-[#0a0d14]/95 border-r border-slate-800/80 p-5 overflow-y-auto scrollbar-thin scrollbar-thumb-slate-800 scrollbar-track-transparent z-30 backdrop-blur-xl">
+      <aside aria-label="Navegação Lateral e Filtros" className="hidden lg:flex lg:flex-col lg:fixed lg:inset-y-0 lg:w-64 bg-[#0a0d14]/95 border-r border-slate-800/80 p-5 overflow-y-auto scrollbar-thin scrollbar-thumb-slate-800 scrollbar-track-transparent z-30 backdrop-blur-xl">
         {content}
       </aside>
 
@@ -218,11 +228,12 @@ export default function Sidebar({
             className="fixed inset-0 bg-black/80 backdrop-blur-sm transition-opacity"
             onClick={onCloseMobile}
           />
-          <aside className="fixed inset-y-0 left-0 w-72 max-w-[85vw] bg-[#0a0d14] border-r border-slate-800 p-5 overflow-y-auto z-50 shadow-2xl flex flex-col">
+          <aside aria-label="Menu Lateral Mobile" className="fixed inset-y-0 left-0 w-72 max-w-[85vw] bg-[#0a0d14] border-r border-slate-800 p-5 overflow-y-auto z-50 shadow-2xl flex flex-col">
             <div className="flex justify-end pb-2">
               <button
                 onClick={onCloseMobile}
                 className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800"
+                aria-label="Fechar menu"
               >
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />

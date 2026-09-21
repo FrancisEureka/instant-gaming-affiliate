@@ -13,8 +13,9 @@ export default function Home() {
   const [activeCategoryTab, setActiveCategoryTab] = useState("all")
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false)
   const [lastUpdated, setLastUpdated] = useState<string>("")
+  const [showScrollTop, setShowScrollTop] = useState(false)
 
-  // Carrega as ofertas do catálogo gerado pelo bot
+  // Carrega as ofertas do catálogo estático gerado pelo bot
   useEffect(() => {
     async function loadDeals() {
       try {
@@ -42,6 +43,28 @@ export default function Home() {
     }
     loadDeals()
   }, [])
+
+  // Monitora scroll para o botão de voltar ao topo
+  useEffect(() => {
+    const handleScroll = () => {
+      setShowScrollTop(window.scrollY > 400)
+    }
+    window.addEventListener("scroll", handleScroll, { passive: true })
+    return () => window.removeEventListener("scroll", handleScroll)
+  }, [])
+
+  const scrollToTop = () => {
+    window.scrollTo({ top: 0, behavior: "smooth" })
+  }
+
+  // Contagem dinâmica de itens por loja
+  const storeCounts = useMemo(() => {
+    const counts: Record<string, number> = {}
+    deals.forEach((d) => {
+      counts[d.store] = (counts[d.store] || 0) + 1
+    })
+    return counts
+  }, [deals])
 
   // Gerenciador de toggle de lojas
   const handleToggleStore = (storeId: string) => {
@@ -88,8 +111,42 @@ export default function Home() {
 
   const totalFree = useMemo(() => deals.filter((d) => d.is_free).length, [deals])
 
+  // JSON-LD Structured Data para Google Rich Snippets (SEO)
+  const jsonLd = useMemo(() => {
+    return {
+      "@context": "https://schema.org",
+      "@type": "ItemList",
+      name: "Ofertas e Jogos Grátis para PC - Eureka Gaming",
+      description: "Catálogo atualizado de promoções de chaves Steam, Instant Gaming, Humble Store, Fanatical, Eneba e G2A.",
+      numberOfItems: filteredDeals.length,
+      itemListElement: filteredDeals.slice(0, 30).map((item, index) => ({
+        "@type": "ListItem",
+        position: index + 1,
+        item: {
+          "@type": "Product",
+          name: item.title,
+          image: item.image,
+          description: `Compre ${item.title} com desconto de ${item.discount}% na ${item.store_name}`,
+          offers: {
+            "@type": "Offer",
+            priceCurrency: "BRL",
+            price: item.final_price,
+            availability: "https://schema.org/InStock",
+            url: item.affiliate_url,
+          },
+        },
+      })),
+    }
+  }, [filteredDeals])
+
   return (
     <div className="min-h-screen bg-[#07090e] text-slate-100 flex flex-col font-sans selection:bg-emerald-500 selection:text-slate-950">
+      {/* Schema.org JSON-LD para motores de busca */}
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
+
       {/* Sidebar Lateral */}
       <Sidebar
         selectedStores={selectedStores}
@@ -100,12 +157,13 @@ export default function Home() {
         onCloseMobile={() => setIsMobileSidebarOpen(false)}
         totalDeals={deals.length}
         totalFree={totalFree}
+        storeCounts={storeCounts}
       />
 
       {/* Conteúdo Principal */}
       <main className="flex-1 lg:ml-64 flex flex-col">
         {/* Top Header Barra Superior */}
-        <header className="sticky top-0 z-20 bg-[#07090e]/80 backdrop-blur-xl border-b border-slate-800/80 px-4 sm:px-6 lg:px-8 py-3.5 flex items-center justify-between gap-4">
+        <header className="sticky top-0 z-20 bg-[#07090e]/85 backdrop-blur-xl border-b border-slate-800/80 px-4 sm:px-6 lg:px-8 py-3 flex items-center justify-between gap-4">
           <div className="flex items-center gap-3">
             {/* Botão Hambúrguer Mobile */}
             <button
@@ -121,7 +179,7 @@ export default function Home() {
             <div className="flex items-center gap-2">
               <span className="hidden sm:inline-flex w-2.5 h-2.5 rounded-full bg-emerald-400 shadow-[0_0_10px_#22c55e]"></span>
               <span className="text-xs font-bold text-slate-400 uppercase tracking-widest hidden sm:inline">
-                Portal de Ofertas
+                Portal de Ofertas & Jogos Grátis
               </span>
             </div>
           </div>
@@ -156,13 +214,13 @@ export default function Home() {
 
             <div className="relative z-10 max-w-2xl">
               <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs font-bold uppercase tracking-wider mb-3">
-                🔥 Melhores Preços do Dia
+                🔥 Melhores Preços do Dia em Jogos de PC
               </div>
               <h1 className="text-2xl sm:text-4xl font-extrabold tracking-tight text-white leading-tight">
-                Economize nos Melhores Jogos para PC
+                As Melhores Promoções e Jogos Grátis para PC
               </h1>
-              <p className="mt-2 text-sm sm:text-base text-slate-400">
-                Chaves oficiais para ativação na Steam com descontos de até 90% e jogos 100% grátis reunidos em um só lugar.
+              <p className="mt-2 text-sm sm:text-base text-slate-400 leading-relaxed">
+                Chaves oficiais com até 90% de desconto na Steam, Instant Gaming, Humble Store, Fanatical, Eneba e G2A, além de jogos 100% grátis todos os dias.
               </p>
 
               {/* Barra de Pesquisa */}
@@ -176,13 +234,14 @@ export default function Home() {
                   type="text"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  placeholder="Pesquisar por título de jogo ou loja..."
+                  placeholder="Pesquisar por título de jogo ou loja parceira..."
                   className="w-full pl-11 pr-10 py-3.5 rounded-2xl bg-slate-950/80 border border-slate-800 text-slate-100 placeholder-slate-500 text-sm focus:outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 transition-all shadow-inner"
                 />
                 {searchQuery && (
                   <button
                     onClick={() => setSearchQuery("")}
                     className="absolute inset-y-0 right-0 pr-3.5 flex items-center text-slate-400 hover:text-white"
+                    aria-label="Limpar pesquisa"
                   >
                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -224,7 +283,7 @@ export default function Home() {
               Mostrando <strong className="text-white">{filteredDeals.length}</strong> de{" "}
               <strong className="text-white">{deals.length}</strong> jogos
             </span>
-            {(selectedStores.length > 0 || selectedPriceFilter !== "all" || searchQuery) && (
+            {(selectedStores.length > 0 || selectedPriceFilter !== "all" || searchQuery || activeCategoryTab !== "all") && (
               <button
                 onClick={() => {
                   setSelectedStores([])
@@ -294,6 +353,20 @@ export default function Home() {
             © 2026 Eureka Gaming. Todos os direitos reservados.
           </p>
         </footer>
+
+        {/* Floating Scroll to Top Button */}
+        {showScrollTop && (
+          <button
+            onClick={scrollToTop}
+            className="fixed bottom-6 right-6 p-3 rounded-full bg-emerald-500 hover:bg-emerald-400 text-slate-950 shadow-2xl shadow-emerald-500/30 transition-all duration-300 z-40 hover:-translate-y-1"
+            title="Voltar ao topo"
+            aria-label="Voltar ao topo da página"
+          >
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 10l7-7m0 0l7 7m-7-7v18" />
+            </svg>
+          </button>
+        )}
       </main>
     </div>
   )
