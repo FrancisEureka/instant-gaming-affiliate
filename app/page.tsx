@@ -25,8 +25,9 @@ export default function Home() {
       try {
         const res = await fetch("/data/deals.json", { cache: "no-store" })
         if (!res.ok) throw new Error("Falha ao carregar ofertas")
-        const data: DealItem[] = await res.json()
-        setDeals(data)
+        const json = await res.json()
+        const dealList: DealItem[] = Array.isArray(json) ? json : (json.deals || [])
+        setDeals(dealList)
       } catch (err) {
         console.error("Erro ao carregar ofertas:", err)
       } finally {
@@ -66,18 +67,22 @@ export default function Home() {
   // Count items per store
   const storeCounts = useMemo(() => {
     const counts: Record<string, number> = {}
-    deals.forEach((d) => {
-      counts[d.store] = (counts[d.store] || 0) + 1
-    })
+    if (Array.isArray(deals)) {
+      deals.forEach((d) => {
+        if (d && d.store) {
+          counts[d.store] = (counts[d.store] || 0) + 1
+        }
+      })
+    }
     return counts
   }, [deals])
 
   // Free deals count
-  const totalFree = useMemo(() => deals.filter((d) => d.is_free).length, [deals])
+  const totalFree = useMemo(() => (Array.isArray(deals) ? deals.filter((d) => d.is_free).length : 0), [deals])
 
   // Featured Deal for Hero Spotlight (prefer free game or biggest discount)
   const featuredDeal = useMemo(() => {
-    if (deals.length === 0) return undefined
+    if (!Array.isArray(deals) || deals.length === 0) return undefined
     const freeGame = deals.find((d) => d.is_free && d.image)
     if (freeGame) return freeGame
     const topDiscount = [...deals].sort((a, b) => b.discount - a.discount)[0]
@@ -86,6 +91,7 @@ export default function Home() {
 
   // Filter & Sort Logic
   const filteredDeals = useMemo(() => {
+    if (!Array.isArray(deals)) return []
     return deals
       .filter((deal) => {
         // Search Filter

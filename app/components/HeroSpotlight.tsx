@@ -15,7 +15,7 @@ export default function HeroSpotlight({
   onSelectCategory,
 }: HeroSpotlightProps) {
   // Top ticker deals
-  const tickerDeals = deals.slice(0, 10)
+  const tickerDeals = Array.isArray(deals) ? deals.slice(0, 10) : []
 
   return (
     <div className="w-full relative overflow-hidden mb-8">
@@ -24,7 +24,7 @@ export default function HeroSpotlight({
         <div className="absolute left-0 top-0 bottom-0 w-16 bg-gradient-to-r from-[#050813] to-transparent z-10 pointer-events-none"></div>
         <div className="absolute right-0 top-0 bottom-0 w-16 bg-gradient-to-l from-[#050813] to-transparent z-10 pointer-events-none"></div>
 
-        <div className="flex items-center gap-2 px-4 shrink-0 bg-emerald-500/10 text-emerald-400 border-r border-emerald-500/20 text-[11px] font-black uppercase tracking-wider z-20">
+        <div className="flex items-center gap-2 px-4 shrink-0 bg-[#050813] text-emerald-400 border-r border-emerald-500/30 text-[11px] font-black uppercase tracking-wider z-20 shadow-md">
           <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping"></span>
           RADAR DE OFERTAS:
         </div>
