@@ -8,36 +8,52 @@ export const viewport: Viewport = {
 }
 
 export const metadata: Metadata = {
-  title: "Eureka Gaming - As Melhores Promoções e Jogos Grátis para PC",
+  metadataBase: new URL('https://eurekagaming.com.br'),
+  title: "Ofertas do Eureka - As Melhores Promoções e Jogos Grátis para PC",
   description:
-    "Encontre as melhores promoções, menores preços históricos em chaves Steam e jogos 100% gratuitos para resgate permanente. Parceiro oficial Instant Gaming, Humble Store, Fanatical, Eneba e G2A.",
+    "Portal oficial de ofertas de games da Comunidade Eureka. Economize até 90% em chaves Steam na Instant Gaming, Humble Store, Fanatical, Eneba e G2A, além de jogos 100% gratuitos todos os dias!",
   keywords: [
-    "Eureka Gaming",
+    "Ofertas do Eureka",
+    "Francis Eureka",
     "Jogos Grátis",
     "Promoções Steam",
     "Instant Gaming Afiliado",
-    "Humble Bundle",
+    "Humble Store",
     "Fanatical",
     "Eneba",
     "G2A",
-    "Desconto em Jogos",
+    "Descontos Games",
     "Menor Preço PC",
   ],
-  authors: [{ name: "Eureka Gaming" }],
+  authors: [{ name: "Francis Eureka" }],
+  icons: {
+    icon: "/logo.webp",
+    shortcut: "/logo.webp",
+    apple: "/logo.webp",
+  },
   openGraph: {
-    title: "Eureka Gaming - As Melhores Promoções e Jogos Grátis",
+    title: "Ofertas do Eureka - As Melhores Promoções e Jogos Grátis",
     description:
       "Descontos de até 90% em chaves digitais para PC e jogos 100% grátis todos os dias!",
-    url: "https://eureka-gaming.vercel.app",
-    siteName: "Eureka Gaming",
+    url: "https://eurekagaming.com.br",
+    siteName: "Ofertas do Eureka",
     locale: "pt_BR",
     type: "website",
+    images: [
+      {
+        url: "/logo.webp",
+        width: 1024,
+        height: 1024,
+        alt: "Logo Ofertas do Eureka",
+      },
+    ],
   },
   twitter: {
     card: "summary_large_image",
-    title: "Eureka Gaming - As Melhores Promoções e Jogos Grátis",
+    title: "Ofertas do Eureka - As Melhores Promoções e Jogos Grátis",
     description:
       "Descontos de até 90% em chaves digitais para PC e jogos 100% grátis todos os dias!",
+    images: ["/logo.webp"],
   },
 }
 

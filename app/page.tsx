@@ -47,7 +47,7 @@ export default function Home() {
   // Monitora scroll para o botão de voltar ao topo
   useEffect(() => {
     const handleScroll = () => {
-      setShowScrollTop(window.scrollY > 400)
+      setShowScrollTop(window.scrollY > 350)
     }
     window.addEventListener("scroll", handleScroll, { passive: true })
     return () => window.removeEventListener("scroll", handleScroll)
@@ -116,8 +116,8 @@ export default function Home() {
     return {
       "@context": "https://schema.org",
       "@type": "ItemList",
-      name: "Ofertas e Jogos Grátis para PC - Eureka Gaming",
-      description: "Catálogo atualizado de promoções de chaves Steam, Instant Gaming, Humble Store, Fanatical, Eneba e G2A.",
+      name: "Ofertas do Eureka - Promoções e Jogos Grátis para PC",
+      description: "Catálogo oficial atualizado de promoções da Steam, Instant Gaming, Humble Store, Fanatical, Eneba e G2A.",
       numberOfItems: filteredDeals.length,
       itemListElement: filteredDeals.slice(0, 30).map((item, index) => ({
         "@type": "ListItem",
@@ -160,15 +160,15 @@ export default function Home() {
         storeCounts={storeCounts}
       />
 
-      {/* Conteúdo Principal */}
-      <main className="flex-1 lg:ml-64 flex flex-col">
+      {/* Conteúdo Principal Fluido (Expandindo até 6 colunas) */}
+      <main className="flex-1 lg:ml-64 flex flex-col min-w-0">
         {/* Top Header Barra Superior */}
-        <header className="sticky top-0 z-20 bg-[#07090e]/85 backdrop-blur-xl border-b border-slate-800/80 px-4 sm:px-6 lg:px-8 py-3 flex items-center justify-between gap-4">
+        <header className="sticky top-0 z-20 bg-[#07090e]/90 backdrop-blur-xl border-b border-slate-800/80 px-4 sm:px-6 lg:px-8 py-3 flex items-center justify-between gap-4">
           <div className="flex items-center gap-3">
             {/* Botão Hambúrguer Mobile */}
             <button
               onClick={() => setIsMobileSidebarOpen(true)}
-              className="lg:hidden p-2 rounded-xl bg-slate-900 border border-slate-800 text-slate-300 hover:text-white"
+              className="lg:hidden p-2 rounded-xl bg-slate-900 border border-slate-800 text-slate-300 hover:text-white transition-colors"
               aria-label="Abrir filtros e menu"
             >
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -176,11 +176,20 @@ export default function Home() {
               </svg>
             </button>
 
-            <div className="flex items-center gap-2">
-              <span className="hidden sm:inline-flex w-2.5 h-2.5 rounded-full bg-emerald-400 shadow-[0_0_10px_#22c55e]"></span>
-              <span className="text-xs font-bold text-slate-400 uppercase tracking-widest hidden sm:inline">
-                Portal de Ofertas & Jogos Grátis
+            {/* Logo e Título no Header */}
+            <div className="flex items-center gap-2.5">
+              <img
+                src="/logo.webp"
+                alt="Logo Ofertas do Eureka"
+                className="w-7 h-7 rounded-full border border-emerald-400/60 object-cover"
+                onError={(e) => {
+                  (e.target as HTMLImageElement).src = "https://gaming-cdn.com/images/favicon/favicon.png"
+                }}
+              />
+              <span className="text-sm sm:text-base font-black tracking-tight text-white">
+                Ofertas do Eureka
               </span>
+              <span className="hidden md:inline-flex w-2 h-2 rounded-full bg-emerald-400 shadow-[0_0_8px_#22c55e] animate-pulse"></span>
             </div>
           </div>
 
@@ -196,9 +205,9 @@ export default function Home() {
               href="https://discord.gg/h2qMvV264T"
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-indigo-600/20 text-indigo-400 hover:bg-indigo-600/30 border border-indigo-500/30 text-xs font-semibold transition-colors"
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-indigo-600/20 text-indigo-400 hover:bg-indigo-600/30 border border-indigo-500/30 text-xs font-semibold transition-colors"
             >
-              <span>Comunidade Discord</span>
+              <span>Discord Oficial</span>
               <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
               </svg>
@@ -206,25 +215,26 @@ export default function Home() {
           </div>
         </header>
 
-        {/* Hero Section & Search */}
-        <section className="px-4 sm:px-6 lg:px-8 pt-8 pb-6 max-w-7xl w-full mx-auto">
-          <div className="relative rounded-3xl overflow-hidden bg-gradient-to-r from-slate-900 via-[#0e1422] to-slate-900 border border-slate-800 p-6 sm:p-8 shadow-2xl mb-8">
-            <div className="absolute top-0 right-0 -mt-12 -mr-12 w-64 h-64 rounded-full bg-emerald-500/10 blur-3xl pointer-events-none"></div>
-            <div className="absolute bottom-0 left-1/4 -mb-12 w-64 h-64 rounded-full bg-indigo-500/10 blur-3xl pointer-events-none"></div>
+        {/* Hero Section & Search (Largura Fluida até 1920px) */}
+        <section className="px-4 sm:px-6 lg:px-8 xl:px-10 2xl:px-12 pt-6 pb-6 w-full max-w-[1920px] mx-auto">
+          {/* Banner Hero */}
+          <div className="relative rounded-3xl overflow-hidden bg-gradient-to-r from-slate-900 via-[#0d1322] to-slate-900 border border-slate-800 p-6 sm:p-8 shadow-2xl mb-8">
+            <div className="absolute top-0 right-0 -mt-12 -mr-12 w-80 h-80 rounded-full bg-emerald-500/10 blur-3xl pointer-events-none"></div>
+            <div className="absolute bottom-0 left-1/3 -mb-12 w-80 h-80 rounded-full bg-indigo-500/10 blur-3xl pointer-events-none"></div>
 
-            <div className="relative z-10 max-w-2xl">
+            <div className="relative z-10 max-w-3xl">
               <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs font-bold uppercase tracking-wider mb-3">
                 🔥 Melhores Preços do Dia em Jogos de PC
               </div>
-              <h1 className="text-2xl sm:text-4xl font-extrabold tracking-tight text-white leading-tight">
-                As Melhores Promoções e Jogos Grátis para PC
+              <h1 className="text-2xl sm:text-4xl lg:text-5xl font-black tracking-tight text-white leading-tight">
+                Ofertas do Eureka
               </h1>
-              <p className="mt-2 text-sm sm:text-base text-slate-400 leading-relaxed">
-                Chaves oficiais com até 90% de desconto na Steam, Instant Gaming, Humble Store, Fanatical, Eneba e G2A, além de jogos 100% grátis todos os dias.
+              <p className="mt-2 text-sm sm:text-base text-slate-400 leading-relaxed max-w-2xl">
+                O melhor comparador e central de promoções de games. Descontos de até 90% na Instant Gaming, Humble Store, Fanatical, Eneba e G2A, além de jogos 100% grátis todos os dias.
               </p>
 
               {/* Barra de Pesquisa */}
-              <div className="mt-6 relative">
+              <div className="mt-6 relative max-w-2xl">
                 <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-slate-400">
                   <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
@@ -234,7 +244,7 @@ export default function Home() {
                   type="text"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  placeholder="Pesquisar por título de jogo ou loja parceira..."
+                  placeholder="Pesquisar pelo nome do jogo ou loja parceira..."
                   className="w-full pl-11 pr-10 py-3.5 rounded-2xl bg-slate-950/80 border border-slate-800 text-slate-100 placeholder-slate-500 text-sm focus:outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 transition-all shadow-inner"
                 />
                 {searchQuery && (
@@ -281,7 +291,7 @@ export default function Home() {
           <div className="flex items-center justify-between text-xs text-slate-400 py-3">
             <span>
               Mostrando <strong className="text-white">{filteredDeals.length}</strong> de{" "}
-              <strong className="text-white">{deals.length}</strong> jogos
+              <strong className="text-white">{deals.length}</strong> promoções
             </span>
             {(selectedStores.length > 0 || selectedPriceFilter !== "all" || searchQuery || activeCategoryTab !== "all") && (
               <button
@@ -298,10 +308,10 @@ export default function Home() {
             )}
           </div>
 
-          {/* Grid de Cards */}
+          {/* Grid de Cards Fluido com até 6 colunas! */}
           {loading ? (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 pt-2">
-              {[...Array(8)].map((_, i) => (
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-6 gap-4 sm:gap-5 pt-2">
+              {[...Array(12)].map((_, i) => (
                 <div
                   key={i}
                   className="rounded-2xl bg-slate-900/60 border border-slate-800/60 p-4 aspect-[4/5] animate-pulse flex flex-col justify-between"
@@ -314,7 +324,7 @@ export default function Home() {
               ))}
             </div>
           ) : filteredDeals.length > 0 ? (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 pt-2">
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-6 gap-4 sm:gap-5 pt-2">
               {filteredDeals.map((deal) => (
                 <GameCard key={deal.id} deal={deal} />
               ))}
@@ -343,14 +353,21 @@ export default function Home() {
 
         {/* Rodapé do Portal */}
         <footer className="mt-auto border-t border-slate-800/80 bg-[#07090e] px-4 sm:px-6 lg:px-8 py-8 text-xs text-slate-400 text-center flex flex-col items-center gap-2">
-          <p className="font-semibold text-slate-300">
-            Eureka Gaming • Portal Oficial de Ofertas, Promoções e Jogos Gratuitos
-          </p>
+          <div className="flex items-center gap-2 mb-1">
+            <img
+              src="/logo.webp"
+              alt="Logo Ofertas do Eureka"
+              className="w-5 h-5 rounded-full object-cover border border-emerald-500/40"
+            />
+            <p className="font-bold text-slate-200">
+              Ofertas do Eureka • Portal Oficial de Ofertas, Promoções e Jogos Gratuitos
+            </p>
+          </div>
           <p className="max-w-xl text-[11px] text-slate-400 leading-relaxed">
-            Alguns links disponibilizados contêm afiliação oficial com as lojas parceiras (Instant Gaming, Humble Store, Fanatical, Eneba e G2A). Ao comprar através dos links, a comunidade Eureka recebe uma comissão sem nenhum custo adicional para você.
+            Links com afiliação oficial das lojas parceiras (Instant Gaming, Humble Store, Fanatical, Eneba e G2A). Ao comprar através dos links, a comunidade Eureka recebe uma comissão sem nenhum custo adicional para você.
           </p>
           <p className="text-[10px] text-slate-400 mt-2">
-            © 2026 Eureka Gaming. Todos os direitos reservados.
+            © 2026 Ofertas do Eureka. Todos os direitos reservados.
           </p>
         </footer>
 
