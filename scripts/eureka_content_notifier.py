@@ -15,6 +15,7 @@ import os
 import re
 import sys
 import time
+import urllib.error
 import urllib.parse
 import urllib.request
 import xml.etree.ElementTree as ET
@@ -470,6 +471,16 @@ def send_whatsapp_message(group_id, text, media_url=None):
     if not WHATSAPP_API_URL or not WHATSAPP_API_KEY:
         return False
 
+    # Health check rápido antes de tentar enviar
+    try:
+        hc_req = urllib.request.Request(f"{WHATSAPP_API_URL}/", headers={"User-Agent": "Mozilla/5.0"})
+        with urllib.request.urlopen(hc_req, timeout=15):
+            pass
+    except Exception as e:
+        print(f"⚠️ [WhatsApp] Servidor Evolution API OFFLINE ({WHATSAPP_API_URL}): {e}")
+        print(f"   Conteúdo será postado APENAS no Discord.")
+        return False
+
     endpoint = f"{WHATSAPP_API_URL.rstrip('/')}/message/sendText/{WHATSAPP_INSTANCE}"
     payload = {
         "number": group_id,
@@ -500,11 +511,23 @@ def send_whatsapp_message(group_id, text, media_url=None):
                 },
             )
             with urllib.request.urlopen(req, timeout=45) as res:
-                return res.status in (200, 201)
-        except Exception as e:
-            print(f"Tentativa {attempt}/3 - Aviso ao enviar mensagem para WhatsApp: {e}")
+                status = res.status
+                if status in (200, 201):
+                    print(f"✅ [WhatsApp] Mensagem enviada com sucesso (HTTP {status})")
+                    return True
+                else:
+                    body = res.read().decode("utf-8", errors="ignore")[:300]
+                    print(f"⚠️ [WhatsApp] Resposta inesperada HTTP {status}: {body}")
+        except urllib.error.HTTPError as e:
+            body = e.read().decode("utf-8", errors="ignore")[:300] if hasattr(e, "read") else ""
+            print(f"❌ [WhatsApp] Tentativa {attempt}/3 - HTTP {e.code}: {body}")
             if attempt < 3:
                 time.sleep(6)
+        except Exception as e:
+            print(f"❌ [WhatsApp] Tentativa {attempt}/3 - Erro de conexão: {e}")
+            if attempt < 3:
+                time.sleep(6)
+    print(f"❌ [WhatsApp] FALHA ao enviar mensagem após 3 tentativas.")
     return False
 
 

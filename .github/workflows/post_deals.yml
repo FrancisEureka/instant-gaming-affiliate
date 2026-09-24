@@ -26,7 +26,27 @@ jobs:
       - name: Acordar servidor WhatsApp (Render)
         run: |
           echo "Acordando Evolution API no Render..."
-          curl -s -m 45 https://eureka-evolution.onrender.com/ || true
+          API_URL="${WHATSAPP_API_URL:-https://eureka-evolution.onrender.com}"
+          ALIVE=false
+          for i in 1 2 3; do
+            echo "Tentativa $i/3 de acordar o servidor..."
+            HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" -m 60 "$API_URL/" 2>/dev/null || echo "000")
+            echo "  HTTP Status: $HTTP_CODE"
+            if [ "$HTTP_CODE" != "000" ] && [ "$HTTP_CODE" != "502" ] && [ "$HTTP_CODE" != "503" ]; then
+              echo "✅ Servidor WhatsApp acordou com sucesso (HTTP $HTTP_CODE)"
+              ALIVE=true
+              break
+            fi
+            echo "  Servidor ainda não respondeu. Aguardando 20s..."
+            sleep 20
+          done
+          if [ "$ALIVE" = false ]; then
+            echo "⚠️ AVISO: Servidor WhatsApp NÃO acordou após 3 tentativas!"
+            echo "  As ofertas serão postadas APENAS no Discord nesta execução."
+            echo "  Verifique o dashboard do Render: https://dashboard.render.com"
+          fi
+        env:
+          WHATSAPP_API_URL: ${{ secrets.WHATSAPP_API_URL }}
 
       - name: Executar bot de ofertas, jogos grátis e catálogo web
         env:

@@ -7,6 +7,7 @@ Afiliado: ?igr=franciseureka
 import json
 import os
 import time
+import urllib.error
 import urllib.parse
 import urllib.request
 from datetime import datetime, timezone
@@ -371,6 +372,16 @@ def send_whatsapp_deal(deal, store="instant_gaming"):
     if not api_url or not api_key:
         return False
 
+    # Health check rápido antes de tentar enviar
+    try:
+        hc_req = urllib.request.Request(f"{api_url}/", headers={"User-Agent": "Mozilla/5.0"})
+        with urllib.request.urlopen(hc_req, timeout=15):
+            pass
+    except Exception as e:
+        print(f"⚠️ [WhatsApp] Servidor Evolution API OFFLINE ({api_url}): {e}")
+        print(f"   Oferta '{deal['name']}' será postada APENAS no Discord.")
+        return False
+
     cfg = STORE_CONFIG.get(store, STORE_CONFIG["instant_gaming"])
     name = deal["name"]
     discount = deal["discount"]
@@ -416,11 +427,23 @@ def send_whatsapp_deal(deal, store="instant_gaming"):
                 },
             )
             with urllib.request.urlopen(req, timeout=45) as res:
-                return res.status in (200, 201)
-        except Exception as e:
-            print(f"Tentativa {attempt}/3 - Aviso ao enviar oferta para o WhatsApp: {e}")
+                status = res.status
+                if status in (200, 201):
+                    print(f"✅ [WhatsApp] Oferta '{name}' enviada com sucesso (HTTP {status})")
+                    return True
+                else:
+                    body = res.read().decode("utf-8", errors="ignore")[:300]
+                    print(f"⚠️ [WhatsApp] Resposta inesperada HTTP {status}: {body}")
+        except urllib.error.HTTPError as e:
+            body = e.read().decode("utf-8", errors="ignore")[:300] if hasattr(e, "read") else ""
+            print(f"❌ [WhatsApp] Tentativa {attempt}/3 - HTTP {e.code}: {body}")
             if attempt < 3:
                 time.sleep(6)
+        except Exception as e:
+            print(f"❌ [WhatsApp] Tentativa {attempt}/3 - Erro de conexão: {e}")
+            if attempt < 3:
+                time.sleep(6)
+    print(f"❌ [WhatsApp] FALHA ao enviar oferta '{deal['name']}' após 3 tentativas.")
     return False
 
 
