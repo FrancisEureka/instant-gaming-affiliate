@@ -28,6 +28,7 @@ const CATEGORIES = [
 
 const STORES = [
   { id: "instant_gaming", name: "Instant Gaming", color: "#FF7F00", border: "hover:border-[#FF7F00]/60 active:border-[#FF7F00]" },
+  { id: "green_man_gaming", name: "Green Man Gaming", color: "#00D166", border: "hover:border-[#00D166]/60 active:border-[#00D166]" },
   { id: "humble_store", name: "Humble Store", color: "#CB2727", border: "hover:border-[#CB2727]/60 active:border-[#CB2727]" },
   { id: "fanatical", name: "Fanatical", color: "#FF6B00", border: "hover:border-[#FF6B00]/60 active:border-[#FF6B00]" },
   { id: "eneba", name: "Eneba", color: "#8a5cf6", border: "hover:border-[#8a5cf6]/60 active:border-[#8a5cf6]" },

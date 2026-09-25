@@ -20,6 +20,7 @@ LAST_STORE_FILE = os.path.join(os.path.dirname(__file__), "posted_last_store.jso
 HUMBLE_AFFILIATE_BASE = "https://humblebundleinc.sjv.io/c/7758631/2059850/25796"
 FANATICAL_AFFILIATE_BASE = "https://www.awin1.com/cread.php?awinmid=118821&awinaffid=3091639&ued="
 G2A_AFFILIATE_LINK = "https://www.g2a.com/n/reflink-e9ca0b6c48"
+GREENMAN_AFFILIATE_BASE = os.environ.get("GREENMAN_AFFILIATE_LINK", "https://www.greenmangaming.com")
 
 STORE_CONFIG = {
     "instant_gaming": {
@@ -32,6 +33,17 @@ STORE_CONFIG = {
         "call_to_action_discord": "Clique aqui para garantir na Instant Gaming",
         "call_to_action_wa": "Garanta o seu jogo pelo link de parceiro da Instant Gaming:",
         "footer_wa": "Ativação imediata • Comunidade Eureka",
+    },
+    "green_man_gaming": {
+        "name": "Green Man Gaming",
+        "tag_name": "GREEN MAN GAMING",
+        "color": 53606,  # Verde Neon GMG #00D166
+        "avatar_url": "https://cdn.iconscout.com/icon/free/png-512/free-green-man-gaming-3628775-3030021.png",
+        "badge_title": "OFERTA DO DIA NA GREEN MAN GAMING!",
+        "footer_text": "Eureka Gaming • Parceiro Oficial Green Man Gaming • Chave Steam",
+        "call_to_action_discord": "Clique aqui para garantir na Green Man Gaming",
+        "call_to_action_wa": "Garanta o seu jogo pelo link de parceiro da Green Man Gaming:",
+        "footer_wa": "Ativação oficial Steam • Apoie a Comunidade Eureka",
     },
     "humble_store": {
         "name": "Humble Store",
@@ -79,7 +91,7 @@ STORE_CONFIG = {
     },
 }
 
-STORES_CYCLE = ["instant_gaming", "humble_store", "fanatical", "eneba", "g2a"]
+STORES_CYCLE = ["instant_gaming", "green_man_gaming", "humble_store", "fanatical", "eneba", "g2a"]
 
 
 def get_next_store():
@@ -215,6 +227,12 @@ def build_affiliate_url(game_name, store="instant_gaming"):
     elif store == "fanatical":
         target = f"https://www.fanatical.com/pt/search?search={urllib.parse.quote_plus(game_name)}"
         return f"{FANATICAL_AFFILIATE_BASE}{urllib.parse.quote(target, safe='')}"
+    elif store == "green_man_gaming":
+        query = urllib.parse.quote_plus(game_name)
+        if "sjv.io" in GREENMAN_AFFILIATE_BASE or "impact" in GREENMAN_AFFILIATE_BASE:
+            target = f"https://www.greenmangaming.com/search?query={query}"
+            return f"{GREENMAN_AFFILIATE_BASE}?u={urllib.parse.quote(target, safe='')}"
+        return f"{GREENMAN_AFFILIATE_BASE}?query={query}"
     elif store == "humble_store":
         target = f"https://www.humblebundle.com/store/search?sort=bestselling&search={urllib.parse.quote_plus(game_name)}"
         return f"{HUMBLE_AFFILIATE_BASE}?u={urllib.parse.quote(target, safe='')}"

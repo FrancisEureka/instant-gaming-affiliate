@@ -11,12 +11,16 @@ export const metadata: Metadata = {
   metadataBase: new URL("https://eurekagaming.com.br"),
   title: "Ofertas do Eureka - As Melhores Promoções e Jogos Grátis para PC",
   description:
-    "Portal oficial de ofertas de games da Comunidade Francis Eureka. Economize até 95% em chaves Steam na Instant Gaming, Humble Store, Fanatical, Eneba e G2A, além de jogos 100% gratuitos todos os dias!",
+    "Ofertas e jogos grátis para PC selecionados pelo Francis Eureka. Economize até 95% em chaves Steam na Instant Gaming, Green Man Gaming, Humble e mais!",
+  alternates: {
+    canonical: "https://eurekagaming.com.br",
+  },
   keywords: [
     "Ofertas do Eureka",
     "Francis Eureka",
     "Jogos Grátis",
     "Promoções Steam",
+    "Green Man Gaming",
     "Instant Gaming Afiliado",
     "Humble Store",
     "Fanatical",
@@ -70,6 +74,10 @@ export default function RootLayout({
         <link
           href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&family=Rajdhani:wght@600;700&display=swap"
           rel="stylesheet"
+        />
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: `{"@context": "https://schema.org", "@graph": [{"@type": "WebSite", "@id": "https://eurekagaming.com.br/#website", "url": "https://eurekagaming.com.br", "name": "Ofertas do Eureka", "description": "Portal oficial de ofertas, menores preços e jogos gratuitos para PC da comunidade Francis Eureka.", "publisher": {"@id": "https://eurekagaming.com.br/#organization"}, "inLanguage": "pt-BR"}, {"@type": "Organization", "@id": "https://eurekagaming.com.br/#organization", "name": "Francis Eureka Gaming", "url": "https://eurekagaming.com.br", "logo": {"@type": "ImageObject", "url": "https://eurekagaming.com.br/logo.webp"}, "sameAs": ["https://www.youtube.com/@franciseureka", "https://twitch.tv/franciseureka", "https://discord.gg/h2qMvV264T", "https://kick.com/franciseureka", "https://www.instagram.com/franciseureka", "https://www.tiktok.com/@franciseureka"]}]}` }}
         />
       </head>
       <body className="min-h-full flex flex-col bg-[#060913] text-slate-100 font-sans selection:bg-emerald-500 selection:text-slate-950">

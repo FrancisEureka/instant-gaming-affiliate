@@ -31,6 +31,7 @@ interface GameCardProps {
 
 const STORE_META: Record<string, { name: string; color: string }> = {
   instant_gaming: { name: "Instant Gaming", color: "#FF7F00" },
+  green_man_gaming: { name: "Green Man Gaming", color: "#00D166" },
   humble_store: { name: "Humble Store", color: "#CB2727" },
   fanatical: { name: "Fanatical", color: "#FF6B00" },
   eneba: { name: "Eneba", color: "#8a5cf6" },

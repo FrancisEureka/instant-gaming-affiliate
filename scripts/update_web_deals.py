@@ -23,6 +23,7 @@ HUMBLE_AFFILIATE_BASE = "https://humblebundleinc.sjv.io/c/7758631/2059850/25796"
 FANATICAL_AFFILIATE_BASE = "https://www.awin1.com/cread.php?awinmid=118821&awinaffid=3091639&ued="
 ENEBA_PARAMS = "af_id=FrancisEureka01&utm_medium=af&utm_source=FrancisEureka01"
 G2A_AFFILIATE_LINK = "https://www.g2a.com/n/reflink-e9ca0b6c48"
+GREENMAN_AFFILIATE_BASE = os.environ.get("GREENMAN_AFFILIATE_LINK", "https://www.greenmangaming.com")
 
 STORE_INFO = {
     "instant_gaming": {
@@ -30,6 +31,12 @@ STORE_INFO = {
         "tag": "INSTANT GAMING",
         "color": "#FF7F00",
         "badge": "bg-orange-500/20 text-orange-400 border border-orange-500/30",
+    },
+    "green_man_gaming": {
+        "name": "Green Man Gaming",
+        "tag": "GREEN MAN GAMING",
+        "color": "#00D166",
+        "badge": "bg-emerald-500/20 text-emerald-400 border border-emerald-500/30",
     },
     "humble_store": {
         "name": "Humble Store",
@@ -75,7 +82,7 @@ STORE_INFO = {
     },
 }
 
-PARTNER_ROTATION = ["instant_gaming", "humble_store", "fanatical", "eneba", "g2a"]
+PARTNER_ROTATION = ["instant_gaming", "green_man_gaming", "humble_store", "fanatical", "eneba", "g2a"]
 
 
 def build_store_links(game_name):
@@ -86,6 +93,7 @@ def build_store_links(game_name):
 
     return {
         "instant_gaming": f"https://www.instant-gaming.com/pt/procurar/?q={query}&igr={AFFILIATE_TAG_IG}",
+        "green_man_gaming": f"{GREENMAN_AFFILIATE_BASE}?query={query}",
         "humble_store": f"{HUMBLE_AFFILIATE_BASE}?u={urllib.parse.quote(humble_target, safe='')}",
         "fanatical": f"{FANATICAL_AFFILIATE_BASE}{urllib.parse.quote(fanatical_target, safe='')}",
         "eneba": f"https://www.eneba.com/store/all?text={query}&{ENEBA_PARAMS}",
