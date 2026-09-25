@@ -20,7 +20,7 @@ LAST_STORE_FILE = os.path.join(os.path.dirname(__file__), "posted_last_store.jso
 HUMBLE_AFFILIATE_BASE = "https://humblebundleinc.sjv.io/c/7758631/2059850/25796"
 FANATICAL_AFFILIATE_BASE = "https://www.awin1.com/cread.php?awinmid=118821&awinaffid=3091639&ued="
 G2A_AFFILIATE_LINK = "https://www.g2a.com/n/reflink-e9ca0b6c48"
-GREENMAN_AFFILIATE_BASE = os.environ.get("GREENMAN_AFFILIATE_LINK", "https://www.greenmangaming.com")
+GREENMAN_AFFILIATE_BASE = "https://greenmangaming.sjv.io/9Vd6v0"
 
 STORE_CONFIG = {
     "instant_gaming": {

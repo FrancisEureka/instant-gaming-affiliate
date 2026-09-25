@@ -23,7 +23,7 @@ HUMBLE_AFFILIATE_BASE = "https://humblebundleinc.sjv.io/c/7758631/2059850/25796"
 FANATICAL_AFFILIATE_BASE = "https://www.awin1.com/cread.php?awinmid=118821&awinaffid=3091639&ued="
 ENEBA_PARAMS = "af_id=FrancisEureka01&utm_medium=af&utm_source=FrancisEureka01"
 G2A_AFFILIATE_LINK = "https://www.g2a.com/n/reflink-e9ca0b6c48"
-GREENMAN_AFFILIATE_BASE = os.environ.get("GREENMAN_AFFILIATE_LINK", "https://www.greenmangaming.com")
+GREENMAN_AFFILIATE_BASE = "https://greenmangaming.sjv.io/9Vd6v0"
 
 STORE_INFO = {
     "instant_gaming": {
@@ -86,14 +86,15 @@ PARTNER_ROTATION = ["instant_gaming", "green_man_gaming", "humble_store", "fanat
 
 
 def build_store_links(game_name):
-    """Gera os links de afiliados para todas as 5 lojas parceiras para este jogo específico."""
+    """Gera os links de afiliados para todas as 6 lojas parceiras para este jogo específico."""
     query = urllib.parse.quote_plus(game_name)
     fanatical_target = f"https://www.fanatical.com/pt/search?search={query}"
     humble_target = f"https://www.humblebundle.com/store/search?sort=bestselling&search={query}"
+    gmg_target = f"https://www.greenmangaming.com/search?query={query}"
 
     return {
         "instant_gaming": f"https://www.instant-gaming.com/pt/procurar/?q={query}&igr={AFFILIATE_TAG_IG}",
-        "green_man_gaming": f"{GREENMAN_AFFILIATE_BASE}?query={query}",
+        "green_man_gaming": f"{GREENMAN_AFFILIATE_BASE}?u=" + urllib.parse.quote(gmg_target, safe=""),
         "humble_store": f"{HUMBLE_AFFILIATE_BASE}?u={urllib.parse.quote(humble_target, safe='')}",
         "fanatical": f"{FANATICAL_AFFILIATE_BASE}{urllib.parse.quote(fanatical_target, safe='')}",
         "eneba": f"https://www.eneba.com/store/all?text={query}&{ENEBA_PARAMS}",
