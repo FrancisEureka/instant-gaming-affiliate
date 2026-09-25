@@ -259,17 +259,78 @@ def fetch_free_games():
     return free_games
 
 
-def main():
+def main(bot_posted_deal=None):
     print("[Web Catalog] Iniciando coleta de ofertas para o site...")
+    
+    # 1. Carrega catálogo existente para detecção de histórico, esgotamentos e mudanças de preço
+    old_deals_map = {}
+    if os.path.exists(OUTPUT_FILE):
+        try:
+            with open(OUTPUT_FILE, "r", encoding="utf-8") as f:
+                old_catalog = json.load(f)
+                for d in old_catalog.get("deals", []):
+                    old_deals_map[d.get("title", "").lower().strip()] = d
+        except Exception as e:
+            print(f"Aviso ao carregar catálogo anterior: {e}")
+
     steam_deals = fetch_steam_deals()
     cs_deals = fetch_cheapshark_deals()
     free_games = fetch_free_games()
 
-    # Mescla e desduplica ofertas pagas por título
+    now_utc = datetime.now(timezone.utc)
+
+    # 2. Verifica expiração de jogos grátis por data limite
+    for g in free_games:
+        end_date_str = g.get("end_date", "")
+        if end_date_str and end_date_str not in ("Ativo", "N/A"):
+            try:
+                ed_dt = datetime.fromisoformat(end_date_str.replace(" ", "T")).replace(tzinfo=timezone.utc)
+                if now_utc > ed_dt:
+                    g["is_expired"] = True
+                    g["status"] = "expired"
+                    g["badge_label"] = "ESGOTADO / EXPIRADO"
+            except Exception:
+                pass
+
+    # 3. Mescla e desduplica
     combined_deals = []
     seen_titles = set()
 
-    # Dá prioridade a jogos grátis no topo do catálogo
+    # Se uma oferta acabou de ser postada pelo bot, coloca ela com prioridade máxima
+    if bot_posted_deal:
+        b_title = bot_posted_deal.get("name") or bot_posted_deal.get("title", "")
+        if b_title:
+            b_key = b_title.lower().strip()
+            seen_titles.add(b_key)
+            store = bot_posted_deal.get("store", "instant_gaming")
+            store_links = build_store_links(b_title)
+            final_p = float(bot_posted_deal.get("final_price", 0))
+            orig_p = float(bot_posted_deal.get("orig_price", final_p))
+            discount = int(bot_posted_deal.get("discount", 0))
+
+            combined_deals.append({
+                "id": f"bot_{b_key}",
+                "title": b_title,
+                "store": store,
+                "store_name": STORE_INFO.get(store, {}).get("name", store.upper()),
+                "store_color": STORE_INFO.get(store, {}).get("color", "#FF7F00"),
+                "store_badge": STORE_INFO.get(store, {}).get("badge", ""),
+                "discount": discount,
+                "original_price": orig_p,
+                "original_price_formatted": f"R$ {orig_p:.2f}".replace(".", ","),
+                "final_price": final_p,
+                "final_price_formatted": f"R$ {final_p:.2f}".replace(".", ","),
+                "image": bot_posted_deal.get("image", ""),
+                "affiliate_url": store_links.get(store, GREENMAN_AFFILIATE_BASE),
+                "all_store_links": store_links,
+                "is_free": False,
+                "is_historical_low": discount >= 75,
+                "badge_label": "POSTADO NO DISCORD",
+                "platform": "Steam / PC Digital",
+                "is_bot_posted": True,
+                "status": "active",
+            })
+
     all_items = free_games + steam_deals + cs_deals
 
     for item in all_items:
@@ -277,26 +338,65 @@ def main():
         if key in seen_titles:
             continue
         seen_titles.add(key)
+
+        # Checa se o preço mudou em relação ao catálogo anterior
+        if key in old_deals_map:
+            prev = old_deals_map[key]
+            prev_price = prev.get("final_price", 0)
+            curr_price = item.get("final_price", 0)
+            if not item.get("is_free") and prev_price > 0 and abs(prev_price - curr_price) >= 1.00:
+                item["is_price_changed"] = True
+                item["status"] = "price_changed"
+                item["previous_price_formatted"] = prev.get("final_price_formatted", "")
+                item["badge_label"] = "PREÇO ALTERADO"
+
         combined_deals.append(item)
 
-    print(f"[Web Catalog] Total de itens coletados: {len(combined_deals)} ({len(free_games)} jogos grátis, {len(combined_deals)-len(free_games)} ofertas)")
+    # 4. Mantém ofertas recentes do histórico que expiraram/saíram do ar com o selo ESGOTADO
+    for old_key, old_item in old_deals_map.items():
+        if old_key not in seen_titles and not old_item.get("is_expired"):
+            old_item["is_expired"] = True
+            old_item["status"] = "expired"
+            old_item["badge_label"] = "ESGOTADO / ENCERRADO"
+            combined_deals.append(old_item)
+            seen_titles.add(old_key)
+
+    # Ordena: Ativas primeiro (jogos grátis depois maiores descontos), e Expiradas no fim
+    def sort_key(d):
+        if d.get("is_expired"):
+            return 999
+        if d.get("is_bot_posted"):
+            return -2
+        if d.get("is_free"):
+            return -1
+        return -d.get("discount", 0)
+
+    combined_deals.sort(key=sort_key)
+
+    total_active_free = len([d for d in combined_deals if d.get("is_free") and not d.get("is_expired")])
+    total_active_deals = len([d for d in combined_deals if not d.get("is_expired")])
+
+    print(f"[Web Catalog] Total de itens no catálogo: {len(combined_deals)} ({total_active_deals} ativas, {len(combined_deals)-total_active_deals} esgotadas/expiradas)")
 
     os.makedirs(os.path.dirname(OUTPUT_FILE), exist_ok=True)
 
     catalog_data = {
         "updated_at": datetime.now(timezone.utc).isoformat(),
         "total_items": len(combined_deals),
-        "total_free": len(free_games),
+        "total_active": total_active_deals,
+        "total_free": total_active_free,
         "creator": {
-            "name": "Eureka Gaming",
+            "name": "Francis Eureka Gaming",
             "tagline": "As Melhores Promoções e Jogos Grátis para PC",
-            "avatar": "https://gaming-cdn.com/images/favicon/favicon.png",
+            "avatar": "/logo.webp",
             "socials": {
                 "discord": "https://discord.gg/h2qMvV264T",
                 "whatsapp": "https://chat.whatsapp.com/G4f13oF0z0L4GZ24HhOq4w",
                 "youtube": "https://www.youtube.com/@franciseureka",
-                "instagram": "https://www.instagram.com/franciseureka",
+                "twitch": "https://twitch.tv/franciseureka",
                 "kick": "https://kick.com/franciseureka",
+                "instagram": "https://www.instagram.com/franciseureka",
+                "tiktok": "https://www.tiktok.com/@franciseureka",
             },
         },
         "deals": combined_deals,
@@ -308,5 +408,5 @@ def main():
     print(f"[Web Catalog] Catálogo salvo com sucesso em: {OUTPUT_FILE}")
 
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     main()

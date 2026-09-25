@@ -24,6 +24,7 @@ const CATEGORIES = [
   { id: "under10", label: "🪙 Até R$ 10", badge: null },
   { id: "under20", label: "💵 Até R$ 20", badge: null },
   { id: "under50", label: "🏷️ Até R$ 50", badge: null },
+  { id: "expired", label: "🛑 Encerradas / Esgotadas", badge: "HISTÓRICO" },
 ]
 
 const STORES = [

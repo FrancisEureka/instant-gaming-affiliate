@@ -23,6 +23,11 @@ export interface DealItem {
   badge_label: string
   platform: string
   end_date?: string
+  is_expired?: boolean
+  is_price_changed?: boolean
+  previous_price_formatted?: string
+  is_bot_posted?: boolean
+  status?: "active" | "expired" | "price_changed"
 }
 
 interface GameCardProps {
@@ -42,6 +47,8 @@ export default function GameCard({ deal }: GameCardProps) {
   const [showRadar, setShowRadar] = useState(false)
   const [copied, setCopied] = useState(false)
   const isFree = deal.is_free
+  const isExpired = Boolean(deal.is_expired)
+  const isPriceChanged = Boolean(deal.is_price_changed)
 
   const handleCopy = (e: React.MouseEvent) => {
     e.preventDefault()
@@ -55,7 +62,11 @@ export default function GameCard({ deal }: GameCardProps) {
     <article
       itemScope
       itemType="https://schema.org/Product"
-      className="group relative rounded-2xl bg-[#090e1a]/95 hover:bg-[#0d1424] border border-white/[0.08] hover:border-emerald-500/70 hover:shadow-[0_0_30px_rgba(16,185,129,0.25)] hover:-translate-y-1.5 transition-all duration-300 flex flex-col overflow-hidden"
+      className={`group relative rounded-2xl border transition-all duration-300 flex flex-col overflow-hidden ${
+        isExpired
+          ? "bg-[#080b14]/80 border-rose-900/30 opacity-85 hover:opacity-100 hover:border-rose-700/50"
+          : "bg-[#090e1a]/95 hover:bg-[#0d1424] border-white/[0.08] hover:border-emerald-500/70 hover:shadow-[0_0_30px_rgba(16,185,129,0.25)] hover:-translate-y-1.5"
+      }`}
     >
       {/* Schema.org hidden SEO data */}
       <meta itemProp="name" content={deal.title} />
@@ -63,7 +74,7 @@ export default function GameCard({ deal }: GameCardProps) {
       <div itemProp="offers" itemScope itemType="https://schema.org/Offer" className="hidden">
         <meta itemProp="priceCurrency" content="BRL" />
         <meta itemProp="price" content={String(deal.final_price)} />
-        <link itemProp="availability" href="https://schema.org/InStock" />
+        <link itemProp="availability" href={isExpired ? "https://schema.org/OutOfStock" : "https://schema.org/InStock"} />
       </div>
 
       {/* Media & Cover Section */}
@@ -72,7 +83,9 @@ export default function GameCard({ deal }: GameCardProps) {
           src={deal.image}
           alt={`Capa do jogo ${deal.title}`}
           loading="lazy"
-          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 ease-out"
+          className={`w-full h-full object-cover transition-transform duration-500 ease-out group-hover:scale-105 ${
+            isExpired ? "grayscale-[60%] opacity-70" : ""
+          }`}
           onError={(e) => {
             (e.target as HTMLImageElement).src =
               "https://shared.fastly.steamstatic.com/store_item_assets/steam/apps/440/header.jpg"
@@ -82,24 +95,38 @@ export default function GameCard({ deal }: GameCardProps) {
         {/* Ambient Dark Gradient */}
         <div className="absolute inset-0 bg-gradient-to-t from-[#090e1a] via-transparent to-black/40"></div>
 
-        {/* Angular Gamer Discount Badge (Top Left) */}
+        {/* SELO TOP LEFT: Desconto OU Selo de Esgotado/Expirado */}
         <div className="absolute top-2 left-2 z-10">
-          <span
-            className={`inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-black tracking-wider uppercase shadow-lg ${
-              isFree
-                ? "bg-emerald-400 text-slate-950 animate-pulse shadow-emerald-400/50"
-                : deal.discount >= 75
-                ? "bg-gradient-to-r from-amber-400 to-yellow-300 text-slate-950 font-black shadow-amber-400/30"
-                : "bg-emerald-500 text-slate-950 font-black shadow-emerald-500/30"
-            }`}
-          >
-            {isFree ? "100% OFF" : `-${deal.discount}%`}
-          </span>
+          {isExpired ? (
+            <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-black tracking-wider uppercase bg-rose-600 text-white shadow-lg shadow-rose-600/40">
+              <span>🛑</span> ESGOTADO
+            </span>
+          ) : (
+            <span
+              className={`inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-black tracking-wider uppercase shadow-lg ${
+                isFree
+                  ? "bg-emerald-400 text-slate-950 animate-pulse shadow-emerald-400/50"
+                  : deal.discount >= 75
+                  ? "bg-gradient-to-r from-amber-400 to-yellow-300 text-slate-950 font-black shadow-amber-400/30"
+                  : "bg-emerald-500 text-slate-950 font-black shadow-emerald-500/30"
+              }`}
+            >
+              {isFree ? "100% OFF" : `-${deal.discount}%`}
+            </span>
+          )}
         </div>
 
-        {/* Top Right Badges & Copy Link */}
+        {/* SELO TOP RIGHT: Preço Alterado, Menor Histórico ou Encerrado */}
         <div className="absolute top-2 right-2 z-10 flex items-center gap-1.5">
-          {deal.badge_label && (
+          {isExpired ? (
+            <span className="inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-black tracking-wide uppercase bg-slate-950/90 text-rose-400 border border-rose-500/40 shadow-md">
+              ENCERRADO
+            </span>
+          ) : isPriceChanged ? (
+            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-black tracking-wide uppercase bg-amber-400 text-slate-950 shadow-md shadow-amber-400/40 animate-pulse">
+              <span>🔄</span> PREÇO ALTERADO
+            </span>
+          ) : deal.badge_label ? (
             <span
               className={`inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-bold tracking-wide uppercase backdrop-blur-md shadow-md ${
                 deal.badge_label === "MENOR HISTÓRICO"
@@ -111,7 +138,7 @@ export default function GameCard({ deal }: GameCardProps) {
             >
               {deal.badge_label}
             </span>
-          )}
+          ) : null}
 
           <button
             onClick={handleCopy}
@@ -148,7 +175,7 @@ export default function GameCard({ deal }: GameCardProps) {
               {deal.store_name}
             </span>
             {deal.end_date && (
-              <span className="text-[10px] text-amber-400/90 font-semibold">
+              <span className={`text-[10px] font-semibold ${isExpired ? "text-rose-400 line-through" : "text-amber-400/90"}`}>
                 ⏳ {deal.end_date}
               </span>
             )}
@@ -156,11 +183,27 @@ export default function GameCard({ deal }: GameCardProps) {
 
           {/* Game Title */}
           <h3
-            className="text-xs sm:text-sm font-bold text-slate-100 group-hover:text-emerald-400 transition-colors line-clamp-2 leading-snug"
+            className={`text-xs sm:text-sm font-bold transition-colors line-clamp-2 leading-snug ${
+              isExpired ? "text-slate-400 group-hover:text-rose-300" : "text-slate-100 group-hover:text-emerald-400"
+            }`}
             title={deal.title}
           >
             {deal.title}
           </h3>
+
+          {/* Aviso contextual de preço alterado */}
+          {isPriceChanged && deal.previous_price_formatted && (
+            <p className="text-[10px] text-amber-400/90 font-medium mt-1">
+              ⚠️ Preço anterior: {deal.previous_price_formatted}
+            </p>
+          )}
+
+          {/* Aviso contextual de oferta encerrada */}
+          {isExpired && (
+            <p className="text-[10px] text-rose-400/90 font-semibold mt-1">
+              ⚠️ Promoção finalizada ou chaves esgotadas
+            </p>
+          )}
         </div>
 
         {/* Price & Action Block */}
@@ -174,10 +217,14 @@ export default function GameCard({ deal }: GameCardProps) {
               )}
               <span
                 className={`text-base sm:text-lg font-black tracking-tight leading-none ${
-                  isFree ? "text-emerald-400 text-lg" : "text-emerald-400"
+                  isExpired
+                    ? "text-slate-400 text-sm line-through"
+                    : isFree
+                    ? "text-emerald-400 text-lg"
+                    : "text-emerald-400"
                 }`}
               >
-                {deal.final_price_formatted}
+                {isExpired ? "FINALIZADO" : deal.final_price_formatted}
               </span>
             </div>
 
@@ -186,18 +233,22 @@ export default function GameCard({ deal }: GameCardProps) {
               href={deal.affiliate_url}
               target="_blank"
               rel="noopener noreferrer"
-              aria-label={`Comprar ${deal.title}`}
-              className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-black bg-emerald-500 hover:bg-emerald-400 text-slate-950 shadow-md shadow-emerald-500/25 hover:shadow-emerald-500/40 hover:scale-105 active:scale-95 transition-all duration-200"
+              aria-label={`Ver oferta de ${deal.title}`}
+              className={`inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-black transition-all duration-200 ${
+                isExpired
+                  ? "bg-slate-800 hover:bg-slate-700 text-slate-300 border border-white/[0.08]"
+                  : "bg-emerald-500 hover:bg-emerald-400 text-slate-950 shadow-md shadow-emerald-500/25 hover:shadow-emerald-500/40 hover:scale-105 active:scale-95"
+              }`}
             >
-              <span>{isFree ? "Resgatar" : "Ver Oferta"}</span>
+              <span>{isExpired ? "Ver Loja" : isFree ? "Resgatar" : "Ver Oferta"}</span>
               <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M14 5l7 7m0 0l-7 7m7-7H3" />
               </svg>
             </a>
           </div>
 
-          {/* Multi-Store Radar (For Paid Games) */}
-          {!isFree && deal.all_store_links && (
+          {/* Multi-Store Radar */}
+          {deal.all_store_links && (
             <div className="relative">
               <button
                 type="button"
@@ -206,10 +257,10 @@ export default function GameCard({ deal }: GameCardProps) {
                 aria-expanded={showRadar}
               >
                 <span className="flex items-center gap-1">
-                  <span className="text-emerald-400">⚡</span>
+                  <span className={isExpired ? "text-slate-400" : "text-emerald-400"}>⚡</span>
                   <span>Radar Multiloja:</span>
                 </span>
-                <span className="text-emerald-400 font-bold">
+                <span className={isExpired ? "text-slate-400 font-bold" : "text-emerald-400 font-bold"}>
                   {showRadar ? "▲ Ocultar" : "▼ Comparar Lojas"}
                 </span>
               </button>

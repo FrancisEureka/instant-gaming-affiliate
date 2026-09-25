@@ -377,7 +377,24 @@ def post_deal(deal, store="instant_gaming"):
         },
     )
     with urllib.request.urlopen(req, timeout=10) as res:
-        return res.status in (200, 204)
+        
+    # Sincroniza e posta automaticamente no site oficial (Ofertas do Eureka)
+    try:
+        import update_web_deals
+        deal_payload = {
+            "name": name,
+            "final_price": deal["final_price"],
+            "orig_price": deal["orig_price"],
+            "discount": discount,
+            "image": deal["image"],
+            "store": store,
+        }
+        update_web_deals.main(bot_posted_deal=deal_payload)
+        print(f"✅ [Site Oficial] Oferta '{name}' postada automaticamente no site!")
+    except Exception as e:
+        print(f"Aviso ao sincronizar oferta com o site: {e}")
+
+    return res.status in (200, 204)
 
 
 def send_whatsapp_deal(deal, store="instant_gaming"):

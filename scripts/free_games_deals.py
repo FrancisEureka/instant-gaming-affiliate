@@ -387,3 +387,11 @@ def run(max_games=2):
 
 if __name__ == "__main__":
     run()
+
+    # Atualiza automaticamente o site com os novos jogos grátis
+    try:
+        import update_web_deals
+        update_web_deals.main()
+        print("✅ [Site Oficial] Catálogo de jogos grátis atualizado no site!")
+    except Exception as e:
+        print(f"Aviso ao sincronizar jogos grátis com o site: {e}")

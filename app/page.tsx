@@ -114,6 +114,8 @@ export default function Home() {
         if (activeCategory === "under10" && (deal.final_price > 10 || deal.is_free)) return false
         if (activeCategory === "under20" && (deal.final_price > 20 || deal.is_free)) return false
         if (activeCategory === "under50" && (deal.final_price > 50 || deal.is_free)) return false
+        if (activeCategory === "expired" && !deal.is_expired) return false
+        if (activeCategory !== "expired" && activeCategory !== "all" && deal.is_expired) return false
 
         return true
       })
