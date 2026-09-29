@@ -22,7 +22,8 @@ AFFILIATE_TAG_IG = "franciseureka"
 HUMBLE_AFFILIATE_BASE = "https://humblebundleinc.sjv.io/c/7758631/2059850/25796"
 FANATICAL_AFFILIATE_BASE = "https://www.awin1.com/cread.php?awinmid=118821&awinaffid=3091639&ued="
 ENEBA_PARAMS = "af_id=FrancisEureka01&utm_medium=af&utm_source=FrancisEureka01"
-G2A_AFFILIATE_LINK = "https://www.g2a.com/n/reflink-e9ca0b6c48"
+G2A_AFFILIATE_BASE = "https://www.g2a.com/search?query="
+G2A_AFFILIATE_PARAMS = "gname=reflink-e9ca0b6c48&utm_campaign=goldmine&utm_medium=goldmine"
 GREENMAN_AFFILIATE_BASE = "https://greenmangaming.sjv.io/9Vd6v0"
 
 STORE_INFO = {
@@ -98,7 +99,7 @@ def build_store_links(game_name):
         "humble_store": f"{HUMBLE_AFFILIATE_BASE}?u={urllib.parse.quote(humble_target, safe='')}",
         "fanatical": f"{FANATICAL_AFFILIATE_BASE}{urllib.parse.quote(fanatical_target, safe='')}",
         "eneba": f"https://www.eneba.com/store/all?text={query}&{ENEBA_PARAMS}",
-        "g2a": G2A_AFFILIATE_LINK,
+        "g2a": f"{G2A_AFFILIATE_BASE}{query}&{G2A_AFFILIATE_PARAMS}",
     }
 
 

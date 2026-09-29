@@ -19,7 +19,8 @@ LAST_STORE_FILE = os.path.join(os.path.dirname(__file__), "posted_last_store.jso
 
 HUMBLE_AFFILIATE_BASE = "https://humblebundleinc.sjv.io/c/7758631/2059850/25796"
 FANATICAL_AFFILIATE_BASE = "https://www.awin1.com/cread.php?awinmid=118821&awinaffid=3091639&ued="
-G2A_AFFILIATE_LINK = "https://www.g2a.com/n/reflink-e9ca0b6c48"
+G2A_AFFILIATE_BASE = "https://www.g2a.com/search?query="
+G2A_AFFILIATE_PARAMS = "gname=reflink-e9ca0b6c48&utm_campaign=goldmine&utm_medium=goldmine"
 GREENMAN_AFFILIATE_BASE = "https://greenmangaming.sjv.io/9Vd6v0"
 
 STORE_CONFIG = {
@@ -220,7 +221,8 @@ def get_daily_deals():
 
 def build_affiliate_url(game_name, store="instant_gaming"):
     if store == "g2a":
-        return G2A_AFFILIATE_LINK
+        query = urllib.parse.quote_plus(game_name)
+        return f"{G2A_AFFILIATE_BASE}{query}&{G2A_AFFILIATE_PARAMS}"
     elif store == "eneba":
         query = urllib.parse.quote_plus(game_name)
         return f"https://www.eneba.com/store/all?text={query}&af_id=FrancisEureka01&utm_medium=af&utm_source=FrancisEureka01"
