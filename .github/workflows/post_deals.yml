@@ -61,6 +61,7 @@ jobs:
           python scripts/update_web_deals.py
 
       - name: Salvar histórico e catálogo do site
+        if: always()
         run: |
           git config --global user.name "Eureka Deals Bot"
           git config --global user.email "bot@franciseureka.com"

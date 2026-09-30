@@ -378,8 +378,14 @@ def post_deal(deal, store="instant_gaming"):
             "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)",
         },
     )
-    with urllib.request.urlopen(req, timeout=10) as res:
-        
+    discord_success = False
+    try:
+        with urllib.request.urlopen(req, timeout=10) as res:
+            discord_success = res.status in (200, 204)
+    except Exception as e:
+        print(f"Erro ao postar no Discord: {e}")
+        discord_success = False
+
     # Sincroniza e posta automaticamente no site oficial (Ofertas do Eureka)
     try:
         import update_web_deals
@@ -396,7 +402,7 @@ def post_deal(deal, store="instant_gaming"):
     except Exception as e:
         print(f"Aviso ao sincronizar oferta com o site: {e}")
 
-    return res.status in (200, 204)
+    return discord_success
 
 
 def send_whatsapp_deal(deal, store="instant_gaming"):

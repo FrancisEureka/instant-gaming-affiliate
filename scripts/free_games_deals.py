@@ -37,6 +37,18 @@ def save_history(history):
         print(f"Erro ao salvar histórico de jogos grátis: {e}")
 
 
+def normalize_game_title(title):
+    """Remove sufixos de lojas, tags e caracteres especiais para comparação e exibição limpa."""
+    if not title:
+        return ""
+    # Remove qualquer conteúdo entre parênteses como (IndieGala), (Epic Games), etc.
+    cleaned = re.sub(r'\(.*?\)', '', title)
+    # Remove palavras como Giveaway, Key, Free, etc.
+    cleaned = re.sub(r'(giveaway|key|free|drm-free)', '', cleaned, flags=re.IGNORECASE)
+    # Remove pontuação residual nas pontas
+    return cleaned.strip(" -–—:()")
+
+
 def clean_game_data(game):
     """Higieniza o título e identifica com precisão a loja/plataforma (IndieGala, Steam, Epic, GOG, etc.)."""
     raw_title = game.get("title", "Jogo Grátis")
@@ -64,18 +76,9 @@ def clean_game_data(game):
     else:
         store_name = platforms
 
-    clean_title = raw_title
-    for suffix in [
-        "(IndieGala) Giveaway", "(indiegala) giveaway", "IndieGala Giveaway",
-        "(Epic Games) Giveaway", "(epic games) giveaway", "Epic Games Giveaway",
-        "(Steam) Key Giveaway", "(Steam) Giveaway", "Steam Giveaway",
-        "(Itch.io) Giveaway", "(itch.io) Giveaway", "(itchio) Giveaway", "Itch.io Giveaway",
-        "(Stove) Giveaway", "(GOG) Giveaway", "Key Giveaway", "Giveaway",
-        "(itch.io)", "(Itch.io)", "(Steam)", "(Epic Games)", "(IndieGala)", "(Stove)", "(GOG)"
-    ]:
-        clean_title = clean_title.replace(suffix, "").strip()
-
-    clean_title = clean_title.rstrip(" -–:()")
+    clean_title = normalize_game_title(raw_title)
+    if not clean_title:
+        clean_title = raw_title.strip()
 
     return {
         "title": clean_title,
@@ -342,7 +345,7 @@ def send_whatsapp_free_game(game):
             with urllib.request.urlopen(req, timeout=45) as res:
                 status = res.status
                 if status in (200, 201):
-                    print(f"✅ [WhatsApp] Jogo grátis '{title}' enviado com sucesso (HTTP {status})")
+                    print(f"[OK] [WhatsApp] Jogo grátis '{title}' enviado com sucesso (HTTP {status})")
                     return True
                 else:
                     body = res.read().decode("utf-8", errors="ignore")[:300]
@@ -360,23 +363,64 @@ def send_whatsapp_free_game(game):
     return False
 
 
+def is_game_already_posted(game, history):
+    """
+    Verifica se o jogo gratuito já foi publicado anteriormente.
+    Garante que jogos que continuam gratuitos (como os semanais da Epic Games,
+    Steam, GOG ou IndieGala) NUNCA sejam repetidos na mesma semana nem enquanto continuarem ativos.
+    Checa tanto pelo ID único da oferta quanto pelo título normalizado do jogo.
+    """
+    info = clean_game_data(game)
+    clean_title = info["title"].lower().strip()
+    gid = str(game.get("id", "")).strip()
+
+    # 1. Checagem direta por ID
+    if gid and gid in history:
+        return True, f"ID '{gid}' já registrado no histórico"
+
+    # 2. Checagem direta por chave de título
+    title_key = f"title:{clean_title}"
+    if title_key in history:
+        return True, f"Título '{info['title']}' já registrado no histórico"
+
+    # 3. Varredura ampla no histórico comparando títulos normalizados
+    def simplify(text):
+        return re.sub(r'[^a-z0-9]', '', text.lower())
+
+    simple_target = simplify(clean_title)
+    if simple_target:
+        for key in history.keys():
+            k_title = key[6:] if key.startswith("title:") else key
+            simple_saved = simplify(k_title)
+            if simple_saved and (simple_saved == simple_target or (len(simple_target) >= 6 and simple_target in simple_saved)):
+                return True, f"Jogo '{info['title']}' já presente no histórico"
+
+    return False, None
+
+
 def run(max_games=2):
     history = load_history()
     games = get_free_games()
     posted_count = 0
 
     for game in games:
+        info = clean_game_data(game)
         gid = str(game.get("id", game.get("title", "")))
-        if gid in history:
+
+        # Regra anti-repetição: se o jogo continua gratuito, NÃO repete
+        already_posted, reason = is_game_already_posted(game, history)
+        if already_posted:
             continue
 
-        info = clean_game_data(game)
         print(f"Postando jogo grátis: {info['title']} ({info['store']})")
         discord_ok = post_free_game(game)
         whatsapp_ok = send_whatsapp_free_game(game)
 
         if discord_ok or whatsapp_ok:
-            history[gid] = datetime.now(timezone.utc).isoformat()
+            now_iso = datetime.now(timezone.utc).isoformat()
+            history[gid] = now_iso
+            clean_t = info["title"].lower().strip()
+            history[f"title:{clean_t}"] = now_iso
             posted_count += 1
             if posted_count >= max_games:
                 break
@@ -392,6 +436,6 @@ if __name__ == "__main__":
     try:
         import update_web_deals
         update_web_deals.main()
-        print("✅ [Site Oficial] Catálogo de jogos grátis atualizado no site!")
+        print("[OK] [Site Oficial] Catálogo de jogos grátis atualizado no site!")
     except Exception as e:
         print(f"Aviso ao sincronizar jogos grátis com o site: {e}")
