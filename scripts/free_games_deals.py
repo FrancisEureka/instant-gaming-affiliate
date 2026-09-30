@@ -38,43 +38,59 @@ def save_history(history):
 
 
 def normalize_game_title(title):
-    """Remove sufixos de lojas, tags e caracteres especiais para comparação e exibição limpa."""
+    """Remove prefixos de marcas, sufixos de lojas, tags e caracteres especiais para comparação e exibição limpa."""
     if not title:
         return ""
-    # Remove qualquer conteúdo entre parênteses como (IndieGala), (Epic Games), etc.
-    cleaned = re.sub(r'\(.*?\)', '', title)
-    # Remove palavras como Giveaway, Key, Free, etc.
-    cleaned = re.sub(r'(giveaway|key|free|drm-free)', '', cleaned, flags=re.IGNORECASE)
+    # Remove prefixos de marcas como "Alienware - ", "Alienware Arena - ", "SteelSeries - "
+    cleaned = re.sub(r'^(alienware arena|alienware|steelseries|lenovo legion|legion)\s*[-–—:]\s*', '', title, flags=re.IGNORECASE)
+    # Remove qualquer conteúdo entre parênteses como (IndieGala), (Epic Games), (Steam), etc.
+    cleaned = re.sub(r'\(.*?\)', '', cleaned)
+    # Remove tags como Giveaway, Key, Free, Steam Key, etc.
+    cleaned = re.sub(r'\b(giveaway|keys?|free|drm-free|steam key|epic games|indiegala|itch\.io|itchio|stove|alienware|steelseries)\b', '', cleaned, flags=re.IGNORECASE)
     # Remove pontuação residual nas pontas
-    return cleaned.strip(" -–—:()")
+    cleaned = cleaned.strip(" -–—:()")
+    return re.sub(r'\s+', ' ', cleaned).strip()
 
 
 def clean_game_data(game):
-    """Higieniza o título e identifica com precisão a loja/plataforma (IndieGala, Steam, Epic, GOG, etc.)."""
+    """Higieniza o título e identifica com precisão a loja/plataforma (Alienware Arena, Steam, Epic, GOG, etc.)."""
     raw_title = game.get("title", "Jogo Grátis")
     platforms = game.get("platforms", "PC")
     desc = game.get("description", "").strip()
+    instructions = game.get("instructions", "").strip()
+    open_url = game.get("open_giveaway_url", "").strip()
+    gamerpower_url = game.get("gamerpower_url", "").strip()
 
-    title_lower = raw_title.lower()
-    desc_lower = desc.lower()
-    plat_lower = platforms.lower()
+    full_text = f"{raw_title} {platforms} {desc} {instructions} {open_url} {gamerpower_url}".lower()
 
-    if "indiegala" in title_lower or "indiegala" in desc_lower:
+    if "alienware" in full_text:
+        store_name = "Alienware Arena"
+    elif "steelseries" in full_text:
+        store_name = "SteelSeries Games"
+    elif "legion" in full_text or "lenovo" in full_text:
+        store_name = "Lenovo Legion"
+    elif "ubisoft" in full_text or "uplay" in full_text:
+        store_name = "Ubisoft Connect"
+    elif "ea app" in full_text or "origin" in full_text:
+        store_name = "EA App"
+    elif "battle.net" in full_text or "battlenet" in full_text or "blizzard" in full_text:
+        store_name = "Battle.net"
+    elif "indiegala" in full_text:
         store_name = "IndieGala (PC / DRM-Free)"
-    elif "epic" in title_lower or "epic" in plat_lower:
+    elif "epic" in full_text:
         store_name = "Epic Games Store"
-    elif "steam" in title_lower or "steam" in plat_lower:
-        store_name = "Steam"
-    elif "gog" in title_lower or "gog" in plat_lower:
+    elif "gog" in full_text:
         store_name = "GOG.com"
-    elif "itch.io" in title_lower or "itchio" in title_lower or "itch" in plat_lower:
-        store_name = "Itch.io (PC / DRM-Free)"
-    elif "stove" in title_lower or "stove" in plat_lower:
-        store_name = "Smilegate Stove"
-    elif "prime" in title_lower or "amazon" in title_lower:
+    elif "steam" in full_text:
+        store_name = "Steam"
+    elif "prime" in full_text or "amazon" in full_text:
         store_name = "Prime Gaming"
+    elif "itch.io" in full_text or "itchio" in full_text or "itch" in full_text:
+        store_name = "Itch.io (PC / DRM-Free)"
+    elif "stove" in full_text:
+        store_name = "Smilegate Stove"
     else:
-        store_name = platforms
+        store_name = platforms if platforms else "PC Digital"
 
     clean_title = normalize_game_title(raw_title)
     if not clean_title:
@@ -88,12 +104,28 @@ def clean_game_data(game):
 
 
 def get_free_games():
-    """Busca jogos 100% gratuitos para PC de fontes confiáveis (IndieGala, Steam, Epic Games, GOG, Itch.io, Stove)."""
+    """Busca jogos 100% gratuitos para PC de fontes confiáveis:
+    - Epic Games Store (API Oficial + GamerPower)
+    - Steam (Giveaways e 100% off)
+    - GOG.com
+    - IndieGala
+    - Alienware Arena (Giveaways oficiais e chaves de jogos)
+    - SteelSeries Games
+    - Ubisoft Connect
+    - EA App / Origin
+    - Battle.net
+    - Smilegate Stove
+    - Itch.io
+    """
     endpoints = [
         "https://www.gamerpower.com/api/giveaways?platform=pc&type=game",
         "https://www.gamerpower.com/api/giveaways?platform=steam&type=game",
         "https://www.gamerpower.com/api/giveaways?platform=epic-games-store&type=game",
         "https://www.gamerpower.com/api/giveaways?platform=gog&type=game",
+        "https://www.gamerpower.com/api/giveaways?platform=itchio&type=game",
+        "https://www.gamerpower.com/api/giveaways?platform=ubisoft&type=game",
+        "https://www.gamerpower.com/api/giveaways?platform=origin&type=game",
+        "https://www.gamerpower.com/api/giveaways?platform=battlenet&type=game",
     ]
     all_games = []
     headers = {
@@ -104,12 +136,73 @@ def get_free_games():
     for url in endpoints:
         req = urllib.request.Request(url, headers=headers)
         try:
-            with urllib.request.urlopen(req, context=ctx, timeout=15) as res:
+            with urllib.request.urlopen(req, context=ctx, timeout=12) as res:
                 data = json.loads(res.read().decode("utf-8"))
                 if isinstance(data, list):
                     all_games.extend(data)
         except Exception as e:
             print(f"Aviso ao consultar endpoint {url}: {e}")
+
+    # Giveaways especiais da Alienware Arena, SteelSeries e chaves de jogos (Apenas jogos completos ou Early Access)
+    try:
+        req = urllib.request.Request("https://www.gamerpower.com/api/giveaways?platform=pc", headers=headers)
+        with urllib.request.urlopen(req, context=ctx, timeout=12) as res:
+            data = json.loads(res.read().decode("utf-8"))
+            if isinstance(data, list):
+                for item in data:
+                    txt = str(item).lower()
+                    gtype = item.get("type", "")
+                    # Garante que seja jogo ou early access (nunca DLC, skin, cosmético ou booster)
+                    if gtype in ("Game", "Early Access"):
+                        if "alienware" in txt or "steelseries" in txt or "lenovo" in txt or "legion" in txt:
+                            all_games.append(item)
+    except Exception as e:
+        print(f"Aviso ao consultar giveaways da Alienware/PC: {e}")
+
+    # API Oficial da Epic Games Store (garante detecção imediata dos jogos semanais)
+    try:
+        epic_url = "https://store-site-backend-static.ak.epicgames.com/freeGamesPromotions?locale=pt-BR&country=BR&allowCountries=BR"
+        req = urllib.request.Request(epic_url, headers=headers)
+        with urllib.request.urlopen(req, context=ctx, timeout=12) as res:
+            epic_data = json.loads(res.read().decode("utf-8"))
+            elements = epic_data.get("data", {}).get("Catalog", {}).get("searchStore", {}).get("elements", [])
+            for e in elements:
+                title = e.get("title", "")
+                promos = e.get("promotions") or {}
+                offers = promos.get("promotionalOffers") or []
+                for group in offers:
+                    for offer in group.get("promotionalOffers", []):
+                        discount = offer.get("discountSetting", {}).get("discountPercentage")
+                        if discount == 0:
+                            img_url = ""
+                            for img in e.get("keyImages", []):
+                                if img.get("type") in ("OfferImageWide", "DieselStoreFrontWide", "Thumbnail"):
+                                    img_url = img.get("url")
+                                    break
+                            page_slug = None
+                            if e.get("catalogNs", {}).get("mappings"):
+                                page_slug = e["catalogNs"]["mappings"][0].get("pageSlug")
+                            if not page_slug:
+                                page_slug = e.get("productSlug") or e.get("urlSlug")
+                            
+                            orig_p = e.get("price", {}).get("fmtPrice", {}).get("originalPrice", "Grátis")
+                            all_games.append({
+                                "id": f"epic_{e.get('id', title)}",
+                                "title": title,
+                                "worth": orig_p,
+                                "thumbnail": img_url,
+                                "image": img_url,
+                                "description": e.get("description", ""),
+                                "instructions": "1. Acesse a página do jogo na Epic Games Store.\n2. Clique em 'Obter' para adicionar gratuitamente para sempre à sua biblioteca.",
+                                "open_giveaway_url": f"https://store.epicgames.com/pt-BR/p/{page_slug}" if page_slug else "https://store.epicgames.com/pt-BR/free-games",
+                                "published_date": offer.get("startDate", ""),
+                                "type": "Game",
+                                "platforms": "PC, Epic Games Store",
+                                "end_date": offer.get("endDate", ""),
+                                "status": "Active"
+                            })
+    except Exception as e:
+        print(f"Aviso ao consultar API Oficial da Epic Games: {e}")
 
     # Remove duplicados por ID
     unique_games = {}
@@ -121,10 +214,39 @@ def get_free_games():
     return list(unique_games.values())
 
 
-
 def get_platform_branding(store_name):
     """Retorna o nome padronizado, URL do logo/ícone e a cor temática da plataforma."""
     s = store_name.lower()
+    if "alienware" in s:
+        return {
+            "name": "ALIENWARE ARENA",
+            "icon": "https://na.alienwarearena.com/favicon.ico",
+            "color": 65535,  # #00FFFF (Ciano Neon Alienware)
+        }
+    if "steelseries" in s:
+        return {
+            "name": "STEELSERIES GAMES",
+            "icon": "https://cdn.iconscout.com/icon/free/png-512/free-steelseries-3628956-3030202.png",
+            "color": 16738560,  # #FF6600 (Laranja SteelSeries)
+        }
+    if "ubisoft" in s:
+        return {
+            "name": "UBISOFT CONNECT",
+            "icon": "https://cdn.iconscout.com/icon/free/png-512/free-ubisoft-3628994-3030240.png",
+            "color": 30378,  # #0076EA (Azul Ubisoft)
+        }
+    if "ea" in s or "origin" in s:
+        return {
+            "name": "EA APP",
+            "icon": "https://cdn.iconscout.com/icon/free/png-512/free-origin-3628880-3030126.png",
+            "color": 16730419,  # #FF4733 (Laranja/Vermelho EA)
+        }
+    if "battle.net" in s or "battlenet" in s or "blizzard" in s:
+        return {
+            "name": "BATTLE.NET",
+            "icon": "https://cdn.iconscout.com/icon/free/png-512/free-battle-net-3628731-3029977.png",
+            "color": 11309,  # #002C4D (Azul Blizzard)
+        }
     if "epic" in s:
         return {
             "name": "EPIC GAMES STORE",
@@ -152,7 +274,7 @@ def get_platform_branding(store_name):
     if "prime" in s or "amazon" in s:
         return {
             "name": "PRIME GAMING",
-            "icon": "https://cdn.jsdelivr.net/gh/walkxcode/dashboard-icons/png/amazon-prime.png",
+            "icon": "https://cdn.iconscout.com/icon/free/png-512/free-amazon-prime-3628719-3029965.png",
             "color": 43233,  # #00A8E1 (Azul Ciano Prime)
         }
     if "itch" in s:
@@ -288,7 +410,7 @@ def send_whatsapp_free_game(game):
             pass
     except Exception as e:
         info = clean_game_data(game)
-        print(f"⚠️ [WhatsApp] Servidor Evolution API OFFLINE ({api_url}): {e}")
+        print(f"[Aviso] [WhatsApp] Servidor Evolution API OFFLINE ({api_url}): {e}")
         print(f"   Jogo grátis '{info['title']}' será postado APENAS no Discord.")
         return False
 
@@ -349,7 +471,7 @@ def send_whatsapp_free_game(game):
                     return True
                 else:
                     body = res.read().decode("utf-8", errors="ignore")[:300]
-                    print(f"⚠️ [WhatsApp] Resposta inesperada HTTP {status}: {body}")
+                    print(f"[Aviso] [WhatsApp] Resposta inesperada HTTP {status}: {body}")
         except urllib.error.HTTPError as e:
             body = e.read().decode("utf-8", errors="ignore")[:300] if hasattr(e, "read") else ""
             print(f"❌ [WhatsApp] Tentativa {attempt}/3 - HTTP {e.code}: {body}")

@@ -81,6 +81,54 @@ STORE_INFO = {
         "color": "#862D86",
         "badge": "bg-fuchsia-500/20 text-fuchsia-400 border border-fuchsia-500/30",
     },
+    "alienware": {
+        "name": "Alienware Arena",
+        "tag": "ALIENWARE",
+        "color": "#00E5FF",
+        "badge": "bg-cyan-500/20 text-cyan-400 border border-cyan-500/30",
+    },
+    "steelseries": {
+        "name": "SteelSeries",
+        "tag": "STEELSERIES",
+        "color": "#FF5200",
+        "badge": "bg-orange-600/20 text-orange-400 border border-orange-600/30",
+    },
+    "ubisoft": {
+        "name": "Ubisoft Connect",
+        "tag": "UBISOFT",
+        "color": "#0070FF",
+        "badge": "bg-sky-500/20 text-sky-400 border border-sky-500/30",
+    },
+    "ea_app": {
+        "name": "EA App",
+        "tag": "EA APP",
+        "color": "#FF4733",
+        "badge": "bg-red-600/20 text-red-400 border border-red-600/30",
+    },
+    "prime_gaming": {
+        "name": "Prime Gaming",
+        "tag": "PRIME GAMING",
+        "color": "#00A8E1",
+        "badge": "bg-indigo-500/20 text-indigo-400 border border-indigo-500/30",
+    },
+    "indiegala": {
+        "name": "IndieGala",
+        "tag": "INDIEGALA",
+        "color": "#E65100",
+        "badge": "bg-amber-600/20 text-amber-400 border border-amber-600/30",
+    },
+    "itchio": {
+        "name": "Itch.io",
+        "tag": "ITCH.IO",
+        "color": "#FA5C5C",
+        "badge": "bg-rose-600/20 text-rose-400 border border-rose-600/30",
+    },
+    "stove": {
+        "name": "Smilegate Stove",
+        "tag": "STOVE",
+        "color": "#FF5722",
+        "badge": "bg-orange-500/20 text-orange-400 border border-orange-500/30",
+    },
 }
 
 PARTNER_ROTATION = ["instant_gaming", "green_man_gaming", "humble_store", "fanatical", "eneba", "g2a"]
@@ -209,38 +257,59 @@ def fetch_cheapshark_deals():
 
 
 def fetch_free_games():
-    """Busca jogos 100% gratuitos disponíveis no momento (GamerPower API)."""
+    """Busca jogos 100% gratuitos disponíveis no momento usando o motor multi-plataformas do free_games_deals."""
     free_games = []
     try:
-        url = "https://www.gamerpower.com/api/giveaways?type=game&platform=pc"
-        req = urllib.request.Request(url, headers={"User-Agent": "EurekaBot/2.0"})
-        with urllib.request.urlopen(req, timeout=12) as res:
-            data = json.loads(res.read().decode("utf-8"))
-
-        for item in data[:20]:
-            title = item.get("title", "").strip()
+        import free_games_deals
+        items = free_games_deals.get_free_games()
+        for item in items:
+            info = free_games_deals.clean_game_data(item)
+            title = info["title"]
+            store_name = info["store"]
             worth = item.get("worth", "N/A")
-            store_raw = (item.get("platforms", "") + " " + title).lower()
             open_url = item.get("open_giveaway_url") or item.get("giveaway_url")
             image = item.get("image", "")
 
-            store_key = "epic_games"
-            if "steam" in store_raw:
+            # Mapeia store_key para STORE_INFO
+            store_lower = store_name.lower()
+            if "alienware" in store_lower:
+                store_key = "alienware"
+            elif "steelseries" in store_lower:
+                store_key = "steelseries"
+            elif "ubisoft" in store_lower:
+                store_key = "ubisoft"
+            elif "ea" in store_lower:
+                store_key = "ea_app"
+            elif "indiegala" in store_lower:
+                store_key = "indiegala"
+            elif "epic" in store_lower:
+                store_key = "epic_games"
+            elif "steam" in store_lower:
                 store_key = "steam"
-            elif "gog" in store_raw:
+            elif "gog" in store_lower:
                 store_key = "gog"
+            elif "prime" in store_lower:
+                store_key = "prime_gaming"
+            elif "itch" in store_lower:
+                store_key = "itchio"
+            elif "stove" in store_lower:
+                store_key = "stove"
+            else:
+                store_key = "steam"
 
-            # Limpa sufixos de títulos
-            for suffix in ["(IndieGala) Giveaway", "(Epic Games) Giveaway", "(Steam) Giveaway", "Giveaway"]:
-                title = title.replace(suffix, "").strip()
+            s_info = STORE_INFO.get(store_key, {
+                "name": store_name,
+                "color": "#22C55E",
+                "badge": "bg-emerald-500/20 text-emerald-400 border border-emerald-500/30"
+            })
 
             free_games.append({
                 "id": f"free_{item.get('id', title)}",
                 "title": title,
                 "store": store_key,
-                "store_name": STORE_INFO.get(store_key, {}).get("name", "PC Digital"),
-                "store_color": STORE_INFO.get(store_key, {}).get("color", "#22C55E"),
-                "store_badge": STORE_INFO.get(store_key, {}).get("badge", "bg-emerald-500/20 text-emerald-400 border border-emerald-500/30"),
+                "store_name": s_info.get("name", store_name),
+                "store_color": s_info.get("color", "#22C55E"),
+                "store_badge": s_info.get("badge", "bg-emerald-500/20 text-emerald-400 border border-emerald-500/30"),
                 "discount": 100,
                 "original_price": 0.0,
                 "original_price_formatted": worth if worth != "N/A" else "R$ 49,99",
