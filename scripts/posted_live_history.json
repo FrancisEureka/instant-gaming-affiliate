@@ -1,7 +1,7 @@
 {
-  "is_live_active": false,
-  "session_title": "An error occurred retrieving data from the API.",
-  "started_at": "2026-10-16T18:41:49.260490+00:00",
+  "is_live_active": true,
+  "session_title": "Não diga olá. Diga SALVE! - Live de Quinta!!!",
+  "started_at": "2026-10-18T23:44:16.324891+00:00",
   "platforms": [
     "Twitch"
   ],
